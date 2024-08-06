@@ -133,13 +133,10 @@ jobs:
     steps:
     - name: Check out source
       uses: actions/checkout@v4
-    - name: Setup python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
     - name: Install dependencies
       run: |
         cat /etc/*-release
         which python
+        python --version
         pip install psutil
         pip install -r requirements.txt
