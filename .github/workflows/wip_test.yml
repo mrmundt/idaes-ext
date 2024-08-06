@@ -22,6 +22,8 @@ jobs:
           TARGET: "ubuntu2204-x86_64"
 
     steps:
+      - name: Checkout IDAES-ext source
+        uses: actions/checkout@v4
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
@@ -71,3 +73,9 @@ jobs:
             echo ""
             echo "$IPOPT_DIR"
             ls -l $IPOPT_DIR
+      - name: Configure and Install cyipopt
+        run: |
+          echo "TODO - patch needed"
+      - name: Run tests
+        run: |
+          pytest -v -rs `pwd`/idaes-ext/test
