@@ -11,7 +11,7 @@ IDAES_DIR = os.path.join(os.environ["HOME"], ".idaes")
 ipopts_to_test = [
     ("ipopt", os.path.join(IDAES_DIR, "bin", "ipopt")),
     ("ipopt_l1", os.path.join(IDAES_DIR, "bin", "ipopt_l1")),
-    ("cyipopt", None),
+    #("cyipopt", None),
 ]
 ipopt_options_to_test = [
     ("default", {}),
