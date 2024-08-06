@@ -89,7 +89,7 @@ jobs:
  
             fi
             cd $IPOPT_DIR
-            tar -xzi < $IPOPT_TAR
+            tar -xvf $IPOPT_TAR
             echo ""
             echo "$IPOPT_DIR"
             ls -l $IPOPT_DIR
