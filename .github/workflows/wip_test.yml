@@ -142,11 +142,14 @@ jobs:
         cat /etc/*-release
         if test "${{ matrix.SHORTOS }}" == el; then
           yum -y update
-          yum -y install libgfortran openblas libgomp lapack
+          yum -y install libgfortran blas libgomp lapack
           yum -y install wget curl || yum -y install --allowerasing wget curl
         else
           apt-get update
-          apt-get -y install libgfortran5 libgomp1 liblapack3 libblas3
+          apt-cache search fortran
+          apt-cache search lapack
+          apt-cache search blas
+          apt-get -y install libgfortran5 libgomp1 liblapack3 libblas3 libc6
           apt-get -y install wget curl
         fi
         if [ `uname -m` = "aarch64" ]; then 
