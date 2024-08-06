@@ -7,7 +7,10 @@ from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation
 
 # TODO: This directory will be wherever we download the binaries that we
 # want to test, likely just in the current working directory.
-IDAES_DIR = os.path.join(os.environ["HOME"], ".idaes")
+if "IDAES_DIR" in os.environ:
+    IDAES_DIR = os.environ["IDAES_DIR"]
+else:
+    IDAES_DIR = os.path.join(os.environ["HOME"], ".idaes")
 ipopts_to_test = [
     ("ipopt", os.path.join(IDAES_DIR, "bin", "ipopt")),
     ("ipopt_l1", os.path.join(IDAES_DIR, "bin", "ipopt_l1")),
