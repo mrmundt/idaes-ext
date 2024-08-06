@@ -126,7 +126,7 @@ jobs:
             TARGET: "ubuntu2204"
             SHORTOS: el
           - container: "debian:10"
-            TARGET: "ubuntu2204"
+            TARGET: "ubuntu2004"
             SHORTOS: deb
           - container: "debian:11"
             TARGET: "ubuntu2004"
@@ -146,9 +146,6 @@ jobs:
           yum -y install wget curl || yum -y install --allowerasing wget curl
         else
           apt-get update
-          apt-cache search fortran
-          apt-cache search lapack
-          apt-cache search blas
           apt-get -y install libgfortran5 libgomp1 liblapack3 libblas3 libc6
           apt-get -y install wget curl
         fi
