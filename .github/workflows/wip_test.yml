@@ -111,7 +111,7 @@ jobs:
           pytest -v -rs `pwd`/test
 
   docker:
-    name: ${{ matrix.docker_image }}/${{ matrix.distro }}
+    name: ${{ matrix.container }}/${{ matrix.distro }}
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.container }}
@@ -120,15 +120,15 @@ jobs:
       matrix:
         container: ["redhat/ubi8", "redhat/ubi9", "debian:9.13", "debian:10", "debian:11"]
         include:
-          - docker_image: redhat/ubi8
+          - container: redhat/ubi8
             distro: rocky8
-          - docker_image: redhat/ubi9
+          - container: redhat/ubi9
             distro: rocky9
-          - docker_image: "debian:9.13"
+          - container: "debian:9.13"
             distro: debian9
-          - docker_image: "debian:10"
+          - container: "debian:10"
             distro: debian10
-          - docker_image: "debian:11"
+          - container: "debian:11"
             distro: debian11
     steps:
     - name: Check out source
