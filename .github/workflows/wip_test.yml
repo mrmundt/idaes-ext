@@ -38,20 +38,20 @@ jobs:
           echo "$CURLRC" > ${GITHUB_WORKSPACE}/.curlrc
           echo "$CURLRC" > ${GITHUB_WORKSPACE}/_curlrc
           echo "CURL_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-      - name: Setup TPL package directories
+      - name: Setup IDAES package directories
         run: |
-          TPL_DIR="${GITHUB_WORKSPACE}/cache/tpl"
-          mkdir -p "$TPL_DIR"
+          IDAES_DIR="${GITHUB_WORKSPACE}/cache/tpl"
+          mkdir -p "$IDAES_DIR"
           DOWNLOAD_DIR="${GITHUB_WORKSPACE}/cache/download"
           mkdir -p "$DOWNLOAD_DIR"
-          echo "TPL_DIR=$TPL_DIR" >> $GITHUB_ENV
+          echo "IDAES_DIR=$IDAES_DIR" >> $GITHUB_ENV
           echo "DOWNLOAD_DIR=$DOWNLOAD_DIR" >> $GITHUB_ENV
       - name: Install Dependencies
         run: |
           pip install pyomo pytest scipy "numpy<2"
       - name: Download Binaries
         run: |
-            IPOPT_DIR=$TPL_DIR/ipopt
+            IPOPT_DIR=$IDAES_DIR/bin
             echo "$IPOPT_DIR" >> $GITHUB_PATH
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
             mkdir -p $IPOPT_DIR
