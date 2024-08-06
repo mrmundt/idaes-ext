@@ -137,5 +137,5 @@ jobs:
       run: |
         cat /etc/*-release
         which python
-        apt install -y python3.10
+        apt-cache search python
         python --version
