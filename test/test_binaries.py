@@ -101,7 +101,7 @@ class TestCouenne:
 
     def test_couenne_default(self):
         m = self._make_model()
-        solver = pyo.SolverFactory("couenne", executable=exe)
+        solver = pyo.SolverFactory("couenne", executable=self.exe)
         solver.solve(m, tee=True)
 
         assert math.isclose(m.y.value, 1.0, abs_tol=1e-7)
