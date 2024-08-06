@@ -82,7 +82,6 @@ jobs:
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
             mkdir -p $IPOPT_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
-            echo ${{ matrix.TARGET }}
             if test ! -e $IPOPT_TAR; then
                 echo "...downloading Ipopt"
                 URL=https://github.com/IDAES/idaes-ext
@@ -111,7 +110,7 @@ jobs:
           pytest -v -rs `pwd`/test
 
   docker:
-    name: ${{ matrix.container }}/${{ matrix.distro }}
+    name: ${{ matrix.container }}/${{ matrix.TARGET }}
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.container }}
@@ -121,19 +120,19 @@ jobs:
         container: ["redhat/ubi8", "redhat/ubi9", "debian:10", "debian:11", "debian:12"]
         include:
           - container: redhat/ubi8
-            distro: rocky8
+            TARGET: "el8"
             SHORTOS: el
           - container: redhat/ubi9
-            distro: rocky9
+            TARGET: "ubuntu2204"
             SHORTOS: el
           - container: "debian:10"
-            distro: debian10
+            TARGET: "ubuntu2204"
             SHORTOS: deb
           - container: "debian:11"
-            distro: debian11
+            TARGET: "ubuntu2004"
             SHORTOS: deb
           - container: "debian:12"
-            distro: debian11
+            TARGET: "ubuntu2204"
             SHORTOS: deb
     steps:
     - name: Check out source
@@ -142,26 +141,60 @@ jobs:
       run: |
         cat /etc/*-release
         if test "${{ matrix.SHORTOS }}" == el; then
-          yum -y install wget
+          yum -y install wget curl
         else
-          apt-get update && apt-get -y install wget
+          apt-get update && apt-get -y install wget curl
         fi
         if [ `uname -m` = "aarch64" ]; then 
           wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O $WORKSPACE/miniconda.sh
+          DISTRO='aarch64'
         fi
         if [ `uname -m` = "x86_64" ]; then
           wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $WORKSPACE/miniconda.sh
+          DISTRO='x86_64'
         fi
+        echo "DISTRO=$DISTRO" >> $GITHUB_ENV
         chmod +x $WORKSPACE/miniconda.sh
         bash $WORKSPACE/miniconda.sh -b -p $WORKSPACE/miniconda
         ls $WORKSPACE/miniconda/bin
-        echo "PATH=$PATH:$WORKSPACE/miniconda/bin"
-    - name: Check if conda is there
+        echo "PATH=$PATH:$WORKSPACE/miniconda/bin" >> $GITHUB_ENV
+    - name: Setup IDAES package directories
       run: |
-        eval "$(/miniconda/bin/conda shell.bash hook)"
+        IDAES_DIR="${GITHUB_WORKSPACE}/cache/tpl"
+        mkdir -p "$IDAES_DIR"
+        DOWNLOAD_DIR="${GITHUB_WORKSPACE}/cache/download"
+        mkdir -p "$DOWNLOAD_DIR"
+        echo "IDAES_DIR=$IDAES_DIR" >> $GITHUB_ENV
+        echo "DOWNLOAD_DIR=$DOWNLOAD_DIR" >> $GITHUB_ENV
+    - name: Install Dependencies
+      run: |
+        #eval "$(/miniconda/bin/conda shell.bash hook)"
         conda --version
         conda create -n idaes python=3.10 pip psutil
         conda activate idaes
-        ls
-        pip install -r requirements-dev.txt
-        idaes get-extensions --nochecksum --url https://github.com/IDAES/idaes-ext/releases/download/test-release/ --distro ${{ matrix.distro }} --extra petsc'
+        # Grab the most recent release of the IDAES extensions
+        pip install pyomo pytest scipy "numpy<2" parameterized
+    - name: Download Binaries
+      run: |
+          IPOPT_DIR=$IDAES_DIR/bin
+          echo "$IPOPT_DIR" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
+          mkdir -p $IPOPT_DIR
+          IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
+          if test ! -e $IPOPT_TAR; then
+              echo "...downloading Ipopt"
+              URL=https://github.com/IDAES/idaes-ext
+              RELEASE=$(curl --max-time 150 --retry 8 \
+                  -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+              VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+              URL=${URL}/releases/download/$VER/idaes-solvers-${{ matrix.TARGET }}-$DISTRO.tar.gz
+              curl --max-time 150 --retry 8 \
+                -L $URL > $IPOPT_TAR
+
+          fi
+          cd $IPOPT_DIR
+          tar -xzi < $IPOPT_TAR
+          echo ""
+          echo "$IPOPT_DIR"
+          ls -l $IPOPT_DIR
+
