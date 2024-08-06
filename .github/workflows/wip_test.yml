@@ -137,5 +137,5 @@ jobs:
       run: |
         cat /etc/*-release
         which python
-        apt-get install python3
+        apt install python3
         python --version
