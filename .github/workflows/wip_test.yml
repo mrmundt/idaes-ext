@@ -143,12 +143,14 @@ jobs:
         cat /etc/*-release
         if test "${{ matrix.SHORTOS }}" == el; then
           yum -y install wget
+        else
+          apt-get -y install wget
         fi
         if [ `uname -m` = "aarch64" ]; then 
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O ~/miniconda.sh
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O $WORKSPACE/miniconda.sh
         fi
         if [ `uname -m` = "x86_64" ]; then
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $WORKSPACE/miniconda.sh
         fi
-        bash ~/miniconda.sh -b -p $WORKSPACE/miniconda
+        source $WORKSPACE/miniconda.sh
         conda --version
