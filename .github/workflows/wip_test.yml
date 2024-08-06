@@ -118,13 +118,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["redhat/ubi8", "redhat/ubi9", "debian:9.13", "debian:10", "debian:11"]
+        container: ["redhat/ubi8", "redhat/ubi9", "debian:9", "debian:10", "debian:11"]
         include:
           - container: redhat/ubi8
             distro: rocky8
           - container: redhat/ubi9
             distro: rocky9
-          - container: "debian:9.13"
+          - container: "debian:9"
             distro: debian9
           - container: "debian:10"
             distro: debian10
