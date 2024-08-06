@@ -132,4 +132,4 @@ jobs:
             distro: debian11
     steps:
     - name: Check out source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
