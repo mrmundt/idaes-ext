@@ -157,7 +157,6 @@ jobs:
         chmod +x $WORKSPACE/miniconda.sh
         bash $WORKSPACE/miniconda.sh -b -p $WORKSPACE/miniconda
         ls $WORKSPACE/miniconda/bin
-        echo "PATH=$PATH:$WORKSPACE/miniconda/bin" >> $GITHUB_ENV
     - name: Setup IDAES package directories
       run: |
         IDAES_DIR="${GITHUB_WORKSPACE}/cache/tpl"
@@ -190,11 +189,16 @@ jobs:
               URL=${URL}/releases/download/$VER/idaes-solvers-${{ matrix.TARGET }}-$DISTRO.tar.gz
               curl --max-time 150 --retry 8 \
                 -L $URL > $IPOPT_TAR
-
           fi
           cd $IPOPT_DIR
           tar -xzi < $IPOPT_TAR
           echo ""
           echo "$IPOPT_DIR"
           ls -l $IPOPT_DIR
-
+    - name: Configure and Install cyipopt
+      run: |
+        echo "TODO - patch needed"
+    - name: Run tests
+      run: |
+        eval "$(/miniconda/bin/conda shell.bash hook)"
+        pytest -v -rs `pwd`/test
