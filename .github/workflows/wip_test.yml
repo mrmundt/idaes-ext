@@ -54,14 +54,14 @@ jobs:
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
             mkdir -p $IPOPT_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
-            echo $TARGET
+            echo ${{ matrix.TARGET }}
             if test ! -e $IPOPT_TAR; then
                 echo "...downloading Ipopt"
                 URL=https://github.com/IDAES/idaes-ext
                 RELEASE=$(curl --max-time 150 --retry 8 \
                     -L -s -H 'Accept: application/json' ${URL}/releases/latest)
                 VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-                URL=${URL}/releases/download/$VER/idaes-solver-$TARGET.tar.gz
+                URL=${URL}/releases/download/$VER/idaes-solver-${{ matrix.TARGET }}.tar.gz
                 curl --max-time 150 --retry 8 \
                   -L $URL > $IPOPT_TAR
  
