@@ -162,5 +162,6 @@ jobs:
         conda --version
         conda create -n idaes python=3.10 pip psutil
         conda activate idaes
+        ls
         pip install -r requirements-dev.txt
         idaes get-extensions --nochecksum --url https://github.com/IDAES/idaes-ext/releases/download/test-release/ --distro ${{ matrix.distro }} --extra petsc'
