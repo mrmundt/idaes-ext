@@ -169,6 +169,7 @@ jobs:
         mkdir -p "$IDAES_DIR"
         DOWNLOAD_DIR="${GITHUB_WORKSPACE}/cache/download"
         mkdir -p "$DOWNLOAD_DIR"
+        # Add a global var / something that you want to exist in future steps
         echo "IDAES_DIR=$IDAES_DIR" >> $GITHUB_ENV
         echo "DOWNLOAD_DIR=$DOWNLOAD_DIR" >> $GITHUB_ENV
     - name: Install Dependencies
@@ -182,6 +183,7 @@ jobs:
     - name: Download Binaries
       run: |
           IPOPT_DIR=$IDAES_DIR/bin
+          # Add something to the path; good for executables
           echo "$IPOPT_DIR" >> $GITHUB_PATH
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
           mkdir -p $IPOPT_DIR
