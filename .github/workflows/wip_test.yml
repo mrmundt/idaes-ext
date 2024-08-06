@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-latest]
         include:
         - os: ubuntu-latest
-          TARGET: ubuntu2204-x86_64
+          TARGET: "ubuntu2204-x86_64"
     steps:
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
@@ -52,6 +52,7 @@ jobs:
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
             mkdir -p $IPOPT_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
+            echo $TARGET
             if test ! -e $IPOPT_TAR; then
                 echo "...downloading Ipopt"
                 URL=https://github.com/IDAES/idaes-ext
