@@ -126,7 +126,7 @@ jobs:
             TARGET: "ubuntu2204"
             SHORTOS: el
           - container: "debian:10"
-            TARGET: "ubuntu2004"
+            TARGET: "el8"
             SHORTOS: deb
           - container: "debian:11"
             TARGET: "ubuntu2004"
