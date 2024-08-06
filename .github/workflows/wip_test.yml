@@ -146,7 +146,7 @@ jobs:
           yum list *lapack*
           yum list *blas*
           
-          yum -y install lapack blas libgfortran libgomp
+          yum -y install libgfortran openblas libgomp
           yum -y install wget curl || yum -y install --allowerasing wget curl
         else
           apt-get update
