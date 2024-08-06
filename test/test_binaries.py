@@ -1,7 +1,10 @@
 import os
 import math
 import pytest
+import parameterized
+import itertools
 import pyomo.environ as pyo
+import pyomo.common.unittest as unittest
 from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation
 
 
@@ -28,6 +31,12 @@ sensitivity_solvers = [
     ("ipopt_sens", "ipopt_sens", None),
     ("ipopt_sens_l1", "ipopt_sense_l1", None),
 ]
+TEE = True
+ipopt_test_data = list(itertools.product(ipopts_to_test, ipopt_options_to_test))
+ipopt_test_data = [
+    (f"{ipoptname}_{optname}", ipoptexe, options)
+    for (ipoptname, ipoptexe), (optname, options) in ipopt_test_data
+]
 
 
 def _test_ipopt_with_options(name, exe, options):
@@ -41,7 +50,7 @@ def _test_ipopt_with_options(name, exe, options):
     else:
         solver = pyo.SolverFactory(name, executable=exe, options=options)
 
-    solver.solve(m, tee=True)
+    solver.solve(m, tee=TEE)
 
     target_sol = [("x[1]", 0.840896415), ("x[2]", 0.594603557)]
     assert all(
@@ -50,19 +59,11 @@ def _test_ipopt_with_options(name, exe, options):
     )
 
 
-class TestIpopt:
-    pass
+class TestIpopt(unittest.TestCase):
 
-
-# Set test functions on the test class
-for solver_name, exe in ipopts_to_test:
-    for option_label, options in ipopt_options_to_test:
-        attr_name = f"test_{solver_name}_{option_label}"
-        setattr(
-            TestIpopt,
-            attr_name,
-            lambda self: _test_ipopt_with_options(solver_name, exe, options),
-        )
+    @parameterized.parameterized.expand(ipopt_test_data)
+    def test_ipopt(self, solver_name, exe, options):
+        _test_ipopt_with_options(solver_name, exe, options)
 
 
 class TestBonmin:
@@ -80,7 +81,7 @@ class TestBonmin:
     def test_bonmin_default(self):
         m = self._make_model()
         solver = pyo.SolverFactory("bonmin", executable=self.exe)
-        solver.solve(m, tee=True)
+        solver.solve(m, tee=TEE)
 
         assert math.isclose(m.y.value, 1.0, abs_tol=1e-7)
         assert math.isclose(m.x[1].value, 1.18920710, abs_tol=1e-7)
@@ -102,7 +103,7 @@ class TestCouenne:
     def test_couenne_default(self):
         m = self._make_model()
         solver = pyo.SolverFactory("couenne", executable=self.exe)
-        solver.solve(m, tee=True)
+        solver.solve(m, tee=TEE)
 
         assert math.isclose(m.y.value, 1.0, abs_tol=1e-7)
         assert math.isclose(m.x[1].value, -1.18816674, abs_tol=1e-7)
@@ -128,7 +129,7 @@ def _test_sensitivity(
     else:
         solver = pyo.SolverFactory(solver_name, executable=solver_exe)
 
-    solver.solve(m, tee=True)
+    solver.solve(m, tee=TEE)
 
     sensitivity_calculation(
         sens_name,
@@ -136,7 +137,7 @@ def _test_sensitivity(
         [m.p],
         [0.7],
         cloneModel=False,
-        tee=True,
+        tee=TEE,
     )
 
 
@@ -145,12 +146,12 @@ class TestSensitivity:
 
 
 if __name__ == "__main__":
-    #pytest.main([__file__])
-    _test_sensitivity(
-        "ipopt_sens",
-        os.path.join(IDAES_DIR, "bin", "ipopt_sens"),
-        "ipopt_sens",
-        os.path.join(IDAES_DIR, "bin", "ipopt_sens"),
-        None,
-        None,
-    )
+    pytest.main([__file__])
+    #_test_sensitivity(
+    #    "ipopt_sens",
+    #    os.path.join(IDAES_DIR, "bin", "ipopt_sens"),
+    #    "ipopt_sens",
+    #    os.path.join(IDAES_DIR, "bin", "ipopt_sens"),
+    #    None,
+    #    None,
+    #)
