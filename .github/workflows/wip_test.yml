@@ -12,14 +12,25 @@ on:
 
 jobs:
   test:
+    name: ${{ matrix.os }}/${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-13, macos-14, windows-2019, windows-2022]
 
         include:
-        - os: ubuntu-latest
+        - os: ubuntu-20.04
+          TARGET: "ubuntu2004-x86_64"
+        - os: ubuntu-22.04
           TARGET: "ubuntu2204-x86_64"
+        - os: macos-13
+          TARGET: "darwin-x86_64"
+        - os: macos-14
+          TARGET: "darwin-aarch64"
+        - os: windows-2019
+          TARGET: "windows-x86_64"
+        - os: windows-2022
+          TARGET: "windows-x86_64"
 
     steps:
       - name: Checkout IDAES-ext source
