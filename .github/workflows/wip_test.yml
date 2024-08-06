@@ -48,7 +48,7 @@ jobs:
           echo "DOWNLOAD_DIR=$DOWNLOAD_DIR" >> $GITHUB_ENV
       - name: Install Dependencies
         run: |
-          pip install pyomo pytest scipy
+          pip install pyomo pytest scipy "numpy<2"
       - name: Download Binaries
         run: |
             IPOPT_DIR=$TPL_DIR/ipopt
