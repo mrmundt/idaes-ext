@@ -1,0 +1,54 @@
+name: Test Binaries
+
+on: [workflow_dispatch]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        include:
+        - os: ubuntu-latest
+          TARGET: ubuntu2204-x86_64
+    steps:
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Configure curl
+        run: |
+          CURLRC="$(cat <<EOF
+             retry = 0
+             max-time = 30
+          EOF
+          )"
+          echo "$CURLRC" > ${GITHUB_WORKSPACE}/.curlrc
+          echo "$CURLRC" > ${GITHUB_WORKSPACE}/_curlrc
+          echo "CURL_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      - name: Setup TPL package directories
+        run: |
+          TPL_DIR="${GITHUB_WORKSPACE}/cache/tpl"
+          mkdir -p "$TPL_DIR"
+          DOWNLOAD_DIR="${GITHUB_WORKSPACE}/cache/download"
+          mkdir -p "$DOWNLOAD_DIR"
+          echo "TPL_DIR=$TPL_DIR" >> $GITHUB_ENV
+          echo "DOWNLOAD_DIR=$DOWNLOAD_DIR" >> $GITHUB_ENV
+      - name: Install Dependencies
+        run: |
+          pip install pyomo pytest
+      - name: Download Binaries
+        run: |
+          IPOPT_DIR=$TPL_DIR/ipopt
+          echo "$IPOPT_DIR" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
+          mkdir -p $IPOPT_DIR
+          IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
+          curl --max-time 150 --retry 8 \
+            -L https://github.com/IDAES/idaes-ext/releases/download/3.4.0/idaes-solvers-$TARGET.tar.gz \
+            > $IPOPT_TAR
+          cd $IPOPT_DIR
+          tar -xzi < $IPOPT_TAR
+          echo ""
+          echo "$IPOPT_DIR"
+          ls -l $IPOPT_DIR
