@@ -117,12 +117,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["redhat/ubi8", "redhat/ubi9", "debian:10", "debian:11", "debian:12"]
+        container: ["rockylinux:8", "rockylinux:9", "debian:10", "debian:11", "debian:12"]
         include:
-          - container: redhat/ubi8
+          - container: "rockylinux:8"
             TARGET: "el8"
             SHORTOS: el
-          - container: redhat/ubi9
+          - container: "rockylinux:9"
             TARGET: "ubuntu2204"
             SHORTOS: el
           - container: "debian:10"
@@ -142,10 +142,7 @@ jobs:
         cat /etc/*-release
         if test "${{ matrix.SHORTOS }}" == el; then
           yum -y update
-          yum list *pack*
-          yum list *lib*
-          
-          yum -y install libgfortran openblas libgomp
+          yum -y install libgfortran openblas libgomp lapack
           yum -y install wget curl || yum -y install --allowerasing wget curl
         else
           apt-get update
