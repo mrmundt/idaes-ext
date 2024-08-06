@@ -56,7 +56,7 @@ jobs:
             -L https://github.com/IDAES/idaes-ext/releases/download/3.4.0/idaes-solvers-$TARGET.tar.gz \
             > $IPOPT_TAR
           cd $IPOPT_DIR
-          tar -xvf < $IPOPT_TAR
+          tar -xvi < $IPOPT_TAR
           echo ""
           echo "$IPOPT_DIR"
           ls -l $IPOPT_DIR
