@@ -142,9 +142,8 @@ jobs:
         cat /etc/*-release
         if test "${{ matrix.SHORTOS }}" == el; then
           yum -y update
-          yum list *fortran*
-          yum list *lapack*
-          yum list *blas*
+          yum list *pack*
+          yum list *lib*
           
           yum -y install libgfortran openblas libgomp
           yum -y install wget curl || yum -y install --allowerasing wget curl
