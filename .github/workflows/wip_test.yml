@@ -47,16 +47,25 @@ jobs:
           pip install pyomo pytest
       - name: Download Binaries
         run: |
-          IPOPT_DIR=$TPL_DIR/ipopt
-          echo "$IPOPT_DIR" >> $GITHUB_PATH
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
-          mkdir -p $IPOPT_DIR
-          IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
-          curl --max-time 150 --retry 8 \
-            -L https://github.com/IDAES/idaes-ext/releases/download/3.4.0/idaes-solvers-$TARGET.tar.gz \
-            > $IPOPT_TAR
-          cd $IPOPT_DIR
-          tar -xvi < $IPOPT_TAR
-          echo ""
-          echo "$IPOPT_DIR"
-          ls -l $IPOPT_DIR
+            IPOPT_DIR=$TPL_DIR/ipopt
+            echo "$IPOPT_DIR" >> $GITHUB_PATH
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
+            mkdir -p $IPOPT_DIR
+            IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
+            if test ! -e $IPOPT_TAR; then
+                echo "...downloading Ipopt"
+                URL=https://github.com/IDAES/idaes-ext
+                RELEASE=$(curl --max-time 150 --retry 8 \
+                    -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+                VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+                URL=${URL}/releases/download/$VER
+                curl --max-time 150 --retry 8 \
+                  -L $URL/idaes-solvers-$TARGET.tar.gz \
+                  > $IPOPT_TAR
+ 
+            fi
+            cd $IPOPT_DIR
+            tar -xzi < $IPOPT_TAR
+            echo ""
+            echo "$IPOPT_DIR"
+            ls -l $IPOPT_DIR
