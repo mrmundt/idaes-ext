@@ -153,5 +153,5 @@ jobs:
           wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $WORKSPACE/miniconda.sh
         fi
         chmod +x $WORKSPACE/miniconda.sh
-        bash $WORKSPACE/miniconda.sh
+        bash $WORKSPACE/miniconda.sh -b -p $WORKSPACE/conda
         conda --version
