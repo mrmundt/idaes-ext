@@ -154,7 +154,9 @@ jobs:
         fi
         chmod +x $WORKSPACE/miniconda.sh
         bash $WORKSPACE/miniconda.sh -b -p $WORKSPACE/miniconda
+        ls $WORKSPACE/miniconda/bin
         echo "PATH=$PATH:$WORKSPACE/miniconda/bin"
     - name: Check if conda is there
       run: |
+        eval "$(/miniconda/bin/conda shell.bash hook)"
         conda --version
