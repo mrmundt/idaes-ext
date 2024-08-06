@@ -124,11 +124,11 @@ jobs:
             distro: rocky8
           - container: redhat/ubi9
             distro: rocky9
-          - container: "debian:9"
-            distro: debian9
           - container: "debian:10"
             distro: debian10
           - container: "debian:11"
+            distro: debian11
+          - container: "debian:12"
             distro: debian11
     steps:
     - name: Check out source
