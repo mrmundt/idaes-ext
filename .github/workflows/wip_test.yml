@@ -23,6 +23,7 @@ jobs:
     name: ${{ matrix.os }}/${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-20.04, ubuntu-22.04, macos-13, macos-14, windows-2019, windows-2022]
 
