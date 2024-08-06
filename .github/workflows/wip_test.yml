@@ -19,7 +19,7 @@ defaults:
     shell: bash -l {0}
 
 jobs:
-  test:
+  builtin:
     name: ${{ matrix.os }}/${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -109,3 +109,27 @@ jobs:
       - name: Run tests
         run: |
           pytest -v -rs `pwd`/test
+
+  docker:
+    name: ${{ matrix.docker_image }}/${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ["redhat/ubi8", "redhat/ubi9", "debian:9.13", "debian:10", "debian:11"]
+        include:
+          - docker_image: redhat/ubi8
+            distro: rocky8
+          - docker_image: redhat/ubi9
+            distro: rocky9
+          - docker_image: "debian:9.13"
+            distro: debian9
+          - docker_image: "debian:10"
+            distro: debian10
+          - docker_image: "debian:11"
+            distro: debian11
+    steps:
+    - name: Check out source
+      uses: actions/checkout@v4
