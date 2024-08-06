@@ -78,4 +78,4 @@ jobs:
           echo "TODO - patch needed"
       - name: Run tests
         run: |
-          pytest -v -rs `pwd`/idaes-ext/test
+          pytest -v -rs `pwd`/test
