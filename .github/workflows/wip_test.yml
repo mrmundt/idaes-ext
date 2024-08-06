@@ -1,6 +1,14 @@
 name: Test Binaries
 
-on: [workflow_dispatch]
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git Hash (Optional)
+        required: false
 
 jobs:
   test:
