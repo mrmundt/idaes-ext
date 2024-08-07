@@ -13,6 +13,7 @@ from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation
 if "IDAES_DIR" in os.environ:
     IDAES_DIR = os.environ["IDAES_DIR"]
 else:
+    # Note that this directory is specific to mac and linux
     IDAES_DIR = os.path.join(os.environ["HOME"], ".idaes")
 ipopts_to_test = [
     ("ipopt", os.path.join(IDAES_DIR, "bin", "ipopt")),
@@ -124,13 +125,12 @@ def _test_sensitivity(
     m.con = pyo.Constraint(expr=m.x[1]*m.x[2] == m.p)
     m.obj = pyo.Objective(expr=m.x[1]**2 + 2*m.x[2]**2)
 
-    if exe is None:
+    if solver_exe is None:
         solver = pyo.SolverFactory(solver_name)
     else:
         solver = pyo.SolverFactory(solver_name, executable=solver_exe)
-
     solver.solve(m, tee=TEE)
-
+    # Note that this just uses whatever k_aug or ipopt_sens is on the path
     sensitivity_calculation(
         sens_name,
         m,
@@ -140,18 +140,32 @@ def _test_sensitivity(
         tee=TEE,
     )
 
+    assert math.isclose(m.sens_sol_state_1[m.x[1]], 0.95301593, abs_tol=1e-7)
+    assert math.isclose(m.sens_sol_state_1[m.x[2]], 0.75316450, abs_tol=1e-7)
+
 
 class TestSensitivity:
-    pass
+
+    ipopt_exe = os.path.join(IDAES_DIR, "bin", "ipopt")
+    sipopt_exe = os.path.join(IDAES_DIR, "bin", "ipopt_sens")
+    k_aug_exe = os.path.join(IDAES_DIR, "bin", "k_aug")
+    dot_sens_exe = os.path.join(IDAES_DIR, "bin", "dot_sens")
+
+    def test_k_aug(self):
+        _test_sensitivity(
+            "ipopt",
+            self.ipopt_exe,
+            "k_aug",
+            self.k_aug_exe,
+            "dot_sens",
+            self.dot_sens_exe,
+        )
+
+    def test_sipopt(self):
+        _test_sensitivity(
+            "ipopt", self.ipopt_exe, "sipopt", self.sipopt_exe, None, None
+        )
 
 
 if __name__ == "__main__":
     pytest.main([__file__])
-    #_test_sensitivity(
-    #    "ipopt_sens",
-    #    os.path.join(IDAES_DIR, "bin", "ipopt_sens"),
-    #    "ipopt_sens",
-    #    os.path.join(IDAES_DIR, "bin", "ipopt_sens"),
-    #    None,
-    #    None,
-    #)
