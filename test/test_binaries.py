@@ -6,6 +6,8 @@ import itertools
 import pyomo.environ as pyo
 import pyomo.common.unittest as unittest
 from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation
+from pyomo.contrib.sensitivity_toolbox.k_aug import InTempDir
+from contextlib import nullcontext
 
 
 # TODO: This directory will be wherever we download the binaries that we
@@ -51,7 +53,14 @@ def _test_ipopt_with_options(name, exe, options):
     else:
         solver = pyo.SolverFactory(name, executable=exe, options=options)
 
-    solver.solve(m, tee=TEE)
+    if "ipopt_l1" in name:
+        # Run this in a temp dir so we don't pollute the working directory with
+        # ipopt_l1's files. See https://github.com/IDAES/idaes-ext/issues/275
+        context = InTempDir()
+    else:
+        context = nullcontext()
+    with context:
+        solver.solve(m, tee=TEE)
 
     target_sol = [("x[1]", 0.840896415), ("x[2]", 0.594603557)]
     assert all(
