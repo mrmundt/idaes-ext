@@ -106,8 +106,10 @@ jobs:
             echo ""
             echo "$IDAES_BIN_DIR"
             ls -l $IDAES_BIN_DIR
-            echo "$(which ipopt_sens)"
-            echo "$(which k_aug)"
+      - name: Check sipopt/k_aug
+        run: |
+          ipopt_sens --version
+          k_aug --version
       - name: Configure and Install cyipopt
         run: |
           echo "TODO - patch needed"
@@ -209,8 +211,10 @@ jobs:
           echo ""
           echo "$IDAES_BIN_DIR"
           ls -l $IDAES_BIN_DIR
-          echo "$(which ipopt_sens)"
-          echo "$(which k_aug)"
+    - name: Check sipopt/k_aug
+      run: |
+        ipopt_sens --version
+        k_aug --version
     - name: Configure and Install cyipopt
       run: |
         echo "TODO - patch needed"
