@@ -207,8 +207,6 @@ jobs:
           echo ""
           echo "$IDAES_BIN_DIR"
           ls -l $IDAES_BIN_DIR
-          ipopt_sens --version
-          k_aug --version
     - name: Configure and Install cyipopt
       run: |
         echo "TODO - patch needed"
