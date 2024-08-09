@@ -81,6 +81,7 @@ jobs:
         run: |
             IDAES_BIN_DIR=$IDAES_DIR/bin
             echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
+            echo "PATH=$PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
             mkdir -p $IDAES_BIN_DIR
