@@ -191,6 +191,7 @@ jobs:
           IDAES_BIN_DIR=$IDAES_DIR/bin
           # Add something to the path; good for executables
           echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
+          echo "$IDAES_BIN_DIR" >> $GITHUB_ACTION_PATH
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           mkdir -p $IDAES_BIN_DIR
