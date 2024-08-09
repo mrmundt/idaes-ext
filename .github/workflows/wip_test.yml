@@ -79,10 +79,10 @@ jobs:
           pip install pyomo pytest scipy "numpy<2" parameterized
       - name: Download Binaries
         run: |
-            IPOPT_DIR=$IDAES_DIR/bin
-            echo "$IPOPT_DIR" >> $GITHUB_PATH
-            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
-            mkdir -p $IPOPT_DIR
+            IDAES_BIN_DIR=$IDAES_DIR/bin
+            echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
+            mkdir -p $IDAES_BIN_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
             if test ! -e $IPOPT_TAR; then
                 echo "...downloading Ipopt"
@@ -95,15 +95,15 @@ jobs:
                   -L $URL > $IPOPT_TAR
  
             fi
-            cd $IPOPT_DIR
+            cd $IDAES_BIN_DIR
             if test "${{ matrix.SHORTOS }}" == osx; then
                 tar -xvf $IPOPT_TAR
             else
                 tar -xzi < $IPOPT_TAR
             fi
             echo ""
-            echo "$IPOPT_DIR"
-            ls -l $IPOPT_DIR
+            echo "$IDAES_BIN_DIR"
+            ls -l $IDAES_BIN_DIR
       - name: Configure and Install cyipopt
         run: |
           echo "TODO - patch needed"
@@ -182,11 +182,11 @@ jobs:
         pip install pyomo pytest scipy "numpy<2" parameterized
     - name: Download Binaries
       run: |
-          IPOPT_DIR=$IDAES_DIR/bin
+          IDAES_BIN_DIR=$IDAES_DIR/bin
           # Add something to the path; good for executables
-          echo "$IPOPT_DIR" >> $GITHUB_PATH
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IPOPT_DIR" >> $GITHUB_ENV
-          mkdir -p $IPOPT_DIR
+          echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
+          mkdir -p $IDAES_BIN_DIR
           IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
           if test ! -e $IPOPT_TAR; then
               echo "...downloading Ipopt"
@@ -198,11 +198,11 @@ jobs:
               curl --max-time 150 --retry 8 \
                 -L $URL > $IPOPT_TAR
           fi
-          cd $IPOPT_DIR
+          cd $IDAES_BIN_DIR
           tar -xzi < $IPOPT_TAR
           echo ""
-          echo "$IPOPT_DIR"
-          ls -l $IPOPT_DIR
+          echo "$IDAES_BIN_DIR"
+          ls -l $IDAES_BIN_DIR
     - name: Configure and Install cyipopt
       run: |
         echo "TODO - patch needed"
