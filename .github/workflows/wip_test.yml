@@ -106,8 +106,8 @@ jobs:
             echo ""
             echo "$IDAES_BIN_DIR"
             ls -l $IDAES_BIN_DIR
-            echo "$PATH"
-            echo "$GITHUB_PATH"
+            which ipopt_sens
+            which k_aug
       - name: Configure and Install cyipopt
         run: |
           echo "TODO - patch needed"
@@ -209,8 +209,8 @@ jobs:
           echo ""
           echo "$IDAES_BIN_DIR"
           ls -l $IDAES_BIN_DIR
-          echo "$PATH"
-          echo "$GITHUB_PATH"
+          which ipopt_sens
+          which k_aug
     - name: Configure and Install cyipopt
       run: |
         echo "TODO - patch needed"
