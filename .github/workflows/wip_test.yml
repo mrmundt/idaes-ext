@@ -108,8 +108,9 @@ jobs:
             ls -l $IDAES_BIN_DIR
       - name: Check sipopt/k_aug
         run: |
-          ipopt_sens --version
-          k_aug --version
+          $IDAES_BIN_DIR/ipopt --version
+          $IDAES_BIN_DIR/ipopt_sens --version
+          $IDAES_BIN_DIR/k_aug --version
       - name: Configure and Install cyipopt
         run: |
           echo "TODO - patch needed"
@@ -213,9 +214,9 @@ jobs:
           ls -l $IDAES_BIN_DIR
     - name: Check sipopt/k_aug
       run: |
-        ipopt --version
-        ipopt_sens --version
-        k_aug --version
+        $IDAES_BIN_DIR/ipopt --version
+        $IDAES_BIN_DIR/ipopt_sens --version
+        $IDAES_BIN_DIR/k_aug --version
     - name: Configure and Install cyipopt
       run: |
         echo "TODO - patch needed"
