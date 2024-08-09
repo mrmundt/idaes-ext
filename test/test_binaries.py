@@ -150,8 +150,8 @@ def _test_sensitivity(
         [0.7],
         cloneModel=False,
         tee=TEE,
-        sensitivity_executable=sensitivity_executable,
-        solver_executable=solver_exe,
+        #sensitivity_executable=sensitivity_executable,
+        #solver_executable=solver_exe,
     )
     solution = {"x[1]": 0.95, "x[2]": 0.75}
     if sens_name == "sipopt":
