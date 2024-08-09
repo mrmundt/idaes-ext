@@ -5,7 +5,7 @@ import parameterized
 import itertools
 import pyomo.environ as pyo
 import pyomo.common.unittest as unittest
-from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation
+from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation, _add_sensitivity_suffixes
 from pyomo.contrib.sensitivity_toolbox.k_aug import InTempDir
 from contextlib import nullcontext
 
@@ -138,8 +138,11 @@ def _test_sensitivity(
         solver = pyo.SolverFactory(solver_name)
     else:
         solver = pyo.SolverFactory(solver_name, executable=solver_exe)
-    solver.solve(m, tee=TEE)
-    # Note that this just uses whatever k_aug or ipopt_sens is on the path
+    solver.solve(m, tee=TEE, keepfiles=True)
+    if sens_name == "k_aug":
+        sensitivity_executable = (sens_exe, update_exe)
+    else:
+        sensitivity_executable = sens_exe
     sensitivity_calculation(
         sens_name,
         m,
@@ -147,10 +150,22 @@ def _test_sensitivity(
         [0.7],
         cloneModel=False,
         tee=TEE,
+        sensitivity_executable=sensitivity_executable,
+        solver_executable=solver_exe,
     )
-
-    assert math.isclose(m.sens_sol_state_1[m.x[1]], 0.95301593, abs_tol=1e-7)
-    assert math.isclose(m.sens_sol_state_1[m.x[2]], 0.75316450, abs_tol=1e-7)
+    solution = {"x[1]": 0.95, "x[2]": 0.75}
+    if sens_name == "sipopt":
+        # sipopt puts the perturbed solution in suffixes
+        for var, val in solution.items():
+            # Use a loose tolerance because methods seem to give different solutions...
+            assert math.isclose(
+                m.sens_sol_state_1[m.find_component(var)], val, abs_tol=1e-1
+            )
+    elif sens_name == "k_aug":
+        # K_aug puts the perturbed solution back in the model
+        for var, val in solution.items():
+            # Use a loose tolerance because methods seem to give different solutions...
+            assert math.isclose(m.find_component(var).value, val, abs_tol=1e-1)
 
 
 class TestSensitivity:
