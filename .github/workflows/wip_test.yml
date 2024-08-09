@@ -106,6 +106,7 @@ jobs:
             echo ""
             echo "$IDAES_BIN_DIR"
             ls -l $IDAES_BIN_DIR
+            echo $PATH
       - name: Configure and Install cyipopt
         run: |
           echo "TODO - patch needed"
