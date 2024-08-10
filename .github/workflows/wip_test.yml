@@ -115,6 +115,8 @@ jobs:
             echo ""
             echo "$IDAES_BIN_DIR"
             ls -l $IDAES_BIN_DIR
+            echo "$IDAES_BIN_DIR/lib"
+            ls -l $IDAES_BIN_DIR/lib
             echo "$IDAES_PC_DIR"
             ls -l $IDAES_PC_DIR
       - name: Check sipopt/k_aug
