@@ -83,6 +83,7 @@ jobs:
             echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
+            echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_BIN_DIR/lib/pkgconfig" >> $GITHUB_ENV
             mkdir -p $IDAES_BIN_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
             if test "${{ matrix.os }}" == macos-14; then
@@ -113,6 +114,8 @@ jobs:
             echo ""
             echo "$IDAES_BIN_DIR"
             ls -l $IDAES_BIN_DIR
+            echo "$PKG_CONFIG_PATH"
+            ls -l $PKG_CONFIG_PATH
       - name: Check sipopt/k_aug
         run: |
           $IDAES_DIR/bin/ipopt --version
