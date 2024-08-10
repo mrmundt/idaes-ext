@@ -124,7 +124,8 @@ jobs:
           $IDAES_DIR/bin/k_aug --version
       - name: Configure and Install cyipopt
         run: |
-          pip install git+https://github.com/mechmotum/cyipopt.git
+          pkg-config --libs --cflags ipopt
+          #pip install git+https://github.com/mechmotum/cyipopt.git
       - name: Run tests
         run: |
           pytest -v -rs `pwd`/test
