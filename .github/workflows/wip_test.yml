@@ -85,6 +85,13 @@ jobs:
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
             mkdir -p $IDAES_BIN_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
+            if test "${{ matrix.os }}" == macos-14; then
+                # Basically a bug in the build process -- we forgot to change the name
+                # to aarch64 here.
+                IDAES_LOCAL_TAR=${IDAES_BIN_DIR}/idaes-local-darwin-arm64.tar.gz
+            else
+                IDAES_LOCAL_TAR=${IDAES_BIN_DIR}/idaes-local-${{ matrix.TARGET }}.tar.gz
+            fi
             if test ! -e $IPOPT_TAR; then
                 echo "...downloading Ipopt"
                 URL=https://github.com/IDAES/idaes-ext
@@ -94,13 +101,14 @@ jobs:
                 URL=${URL}/releases/download/3.4.1/idaes-solvers-${{ matrix.TARGET }}.tar.gz
                 curl --max-time 150 --retry 8 \
                   -L $URL > $IPOPT_TAR
- 
             fi
             cd $IDAES_BIN_DIR
             if test "${{ matrix.SHORTOS }}" == osx; then
                 tar -xvf $IPOPT_TAR
+                tar -xvf $IDAES_LOCAL_TAR
             else
                 tar -xzi < $IPOPT_TAR
+                tar -xzi < $IDAES_LOCAL_TAR
             fi
             echo ""
             echo "$IDAES_BIN_DIR"
