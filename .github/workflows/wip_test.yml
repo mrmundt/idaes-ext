@@ -117,8 +117,8 @@ jobs:
             ls -l $IDAES_BIN_DIR
             echo "$IDAES_BIN_DIR/lib"
             ls -l $IDAES_BIN_DIR/lib
-            echo "$IDAES_PC_DIR"
-            ls -l $IDAES_PC_DIR
+            echo "$IDAES_BIN_DIR/lib/pkgconfig"
+            ls -l $IDAES_BIN_DIR/lib/pkgconfig
       - name: Check sipopt/k_aug
         run: |
           $IDAES_DIR/bin/ipopt --version
