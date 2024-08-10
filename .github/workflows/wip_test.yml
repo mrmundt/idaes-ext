@@ -83,7 +83,7 @@ jobs:
             echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
-            echo "IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig" >> $GITHUB_ENV
+            IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
             echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
             mkdir -p $IDAES_BIN_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
@@ -113,12 +113,12 @@ jobs:
                 tar -xzi < $IDAES_LOCAL_TAR
             fi
             echo ""
-            echo "$IDAES_BIN_DIR"
-            ls -l $IDAES_BIN_DIR
-            echo "$IDAES_BIN_DIR/lib"
-            ls -l $IDAES_BIN_DIR/lib
-            echo "$IDAES_BIN_DIR/lib/pkgconfig"
-            ls -l $IDAES_BIN_DIR/lib/pkgconfig
+            #echo "$IDAES_BIN_DIR"
+            #ls -l $IDAES_BIN_DIR
+            #echo "$IDAES_BIN_DIR/lib"
+            #ls -l $IDAES_BIN_DIR/lib
+            #echo "$IDAES_BIN_DIR/lib/pkgconfig"
+            #ls -l $IDAES_BIN_DIR/lib/pkgconfig
             echo "$IDAES_PC_DIR"
             ls -l $IDAES_PC_DIR
       - name: Check sipopt/k_aug
