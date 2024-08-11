@@ -37,7 +37,7 @@ sensitivity_solvers = [
 TEE = True
 ipopt_test_data = list(itertools.product(ipopts_to_test, ipopt_options_to_test))
 ipopt_test_data = [
-    (f"{ipoptname}_{optname}", ipoptexe, options)
+    (f"{ipoptname}_{optname}", ipoptname, ipoptexe, options)
     for (ipoptname, ipoptexe), (optname, options) in ipopt_test_data
 ]
 
@@ -72,7 +72,7 @@ def _test_ipopt_with_options(name, exe, options):
 class TestIpopt(unittest.TestCase):
 
     @parameterized.parameterized.expand(ipopt_test_data)
-    def test_ipopt(self, solver_name, exe, options):
+    def test_ipopt(self, test_name, solver_name, exe, options):
         _test_ipopt_with_options(solver_name, exe, options)
 
 
