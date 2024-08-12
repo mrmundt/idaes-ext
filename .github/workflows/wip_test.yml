@@ -133,7 +133,7 @@ jobs:
         run: |
           echo "$PKG_CONFIG_PATH"
           pkg-config --libs --cflags ipopt
-          #pip install git+https://github.com/mechmotum/cyipopt.git
+          pip install git+https://github.com/mechmotum/cyipopt.git
       - name: Run tests
         run: |
           pytest -v -rs `pwd`/test
