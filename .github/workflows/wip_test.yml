@@ -243,6 +243,8 @@ jobs:
     - name: Configure and Install cyipopt
       run: |
         echo "$PKG_CONFIG_PATH"
+        echo "$IDAES_DIR/bin/lib/pkgconfig"
+        ls "$IDAES_DIR/bin/lib/pkgconfig"
         pkg-config --libs --cflags ipopt
         #pip install git+https://github.com/mechmotum/cyipopt.git
         pip install cyipopt
