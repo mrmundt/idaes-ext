@@ -215,6 +215,8 @@ jobs:
           echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
+          IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
           mkdir -p $IDAES_BIN_DIR
           IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
           if test ! -e $IPOPT_TAR; then
@@ -239,7 +241,10 @@ jobs:
         $IDAES_DIR/bin/k_aug --version
     - name: Configure and Install cyipopt
       run: |
-        echo "TODO - patch needed"
+        echo "$PKG_CONFIG_PATH"
+        pkg-config --libs --cflags ipopt
+        #pip install git+https://github.com/mechmotum/cyipopt.git
+        pip install cyipopt
     - name: Run tests
       run: |
         eval "$(/miniconda/bin/conda shell.bash hook)"
