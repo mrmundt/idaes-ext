@@ -253,10 +253,10 @@ jobs:
         ls "$IDAES_DIR/bin/lib"
         ls "$IDAES_DIR/bin/lib/pkgconfig"
         pkg-config --libs --cflags ipopt
-        #pip install git+https://github.com/mechmotum/cyipopt.git
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
-        pip install cyipopt
+        #pip install cyipopt
+        pip install git+https://github.com/mechmotum/cyipopt.git
     - name: Run tests
       run: |
         eval "$(/miniconda/bin/conda shell.bash hook)"
