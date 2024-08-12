@@ -231,7 +231,7 @@ jobs:
                 -L $URL > $IPOPT_TAR
           fi
           cd $IDAES_BIN_DIR
-          IDAES_LOCAL_TAR=${IDAES_BIN_DIR}/idaes-local-${{ matrix.TARGET }}.tar.gz
+          IDAES_LOCAL_TAR=${IDAES_BIN_DIR}/idaes-local-${{ matrix.TARGET }}-$DISTRO.tar.gz
           echo "Unpacking $IPOPT_TAR into $PWD"
           tar -xzi < $IPOPT_TAR
           echo "Unpacking $IDAES_LOCAL_TAR"
