@@ -104,12 +104,18 @@ jobs:
                 curl --max-time 150 --retry 8 \
                   -L $URL > $IPOPT_TAR
             fi
+            echo "Downloaded idaes-solvers .tar.gz file"
+            file $IPOPT_TAR # Hopefully this works on Windows
             cd $IDAES_BIN_DIR
             if test "${{ matrix.SHORTOS }}" == osx; then
+                echo "Unpacking $IPOPT_TAR into $PWD"
                 tar -xvf $IPOPT_TAR
+                echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xvf $IDAES_LOCAL_TAR
             else
+                echo "Unpacking $IPOPT_TAR into $PWD"
                 tar -xzi < $IPOPT_TAR
+                echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xzi < $IDAES_LOCAL_TAR
             fi
             echo ""
