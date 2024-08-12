@@ -254,6 +254,7 @@ jobs:
         ls "$IDAES_DIR/bin/lib/pkgconfig"
         pkg-config --libs --cflags ipopt
         #pip install git+https://github.com/mechmotum/cyipopt.git
+        conda activate idaes
         pip install cyipopt
     - name: Run tests
       run: |
