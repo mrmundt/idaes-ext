@@ -269,4 +269,5 @@ jobs:
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
         pip list
+        python -c "from pyomo.common.dependencies import attempt_import; cyipopt, cyipopt_avail = attempt_import('cyipopt'); print(bool(cyipopt_avail))"
         pytest -v -rs `pwd`/test
