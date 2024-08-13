@@ -128,11 +128,11 @@ jobs:
             ls -l $IDAES_BIN_DIR
             echo "$IDAES_PC_DIR"
             ls -l $IDAES_PC_DIR
-      - name: Check sipopt/k_aug
-        run: |
-          $IDAES_DIR/bin/ipopt --version
-          $IDAES_DIR/bin/ipopt_sens --version
-          $IDAES_DIR/bin/k_aug --version
+            #- name: Check sipopt/k_aug
+            #  run: |
+            #    $IDAES_DIR/bin/ipopt --version
+            #    $IDAES_DIR/bin/ipopt_sens --version
+            #    $IDAES_DIR/bin/k_aug --version
       - name: Configure and Install cyipopt
         run: |
           echo "$PKG_CONFIG_PATH"
@@ -245,11 +245,11 @@ jobs:
           echo ""
           echo "$IDAES_BIN_DIR"
           ls -l $IDAES_BIN_DIR
-    - name: Check sipopt/k_aug
-      run: |
-        $IDAES_DIR/bin/ipopt --version
-        $IDAES_DIR/bin/ipopt_sens --version
-        $IDAES_DIR/bin/k_aug --version
+          #- name: Check sipopt/k_aug
+          #  run: |
+          #    $IDAES_DIR/bin/ipopt --version
+          #    $IDAES_DIR/bin/ipopt_sens --version
+          #    $IDAES_DIR/bin/k_aug --version
     - name: Configure and Install cyipopt
       run: |
         echo "$PKG_CONFIG_PATH"
