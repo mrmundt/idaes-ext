@@ -3,10 +3,14 @@ import math
 import pytest
 import parameterized
 import itertools
+import scipy.sparse as sparse
 import pyomo.environ as pyo
 import pyomo.common.unittest as unittest
+from pyomo.common.collections import ComponentMap
+from pyomo.repn.util import FileDeterminism
 from pyomo.contrib.sensitivity_toolbox.sens import sensitivity_calculation, _add_sensitivity_suffixes
 from pyomo.contrib.sensitivity_toolbox.k_aug import InTempDir
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from contextlib import nullcontext
 
 
@@ -191,6 +195,35 @@ class TestSensitivity:
         )
 
 
+class TestPyNumeroASL:
+
+    def _make_model(self):
+        m = pyo.ConcreteModel()
+        m.x = pyo.Var([1, 2], initialize=0.0, bounds=(0, 10))
+        m.ineq = pyo.Constraint(pyo.PositiveIntegers)
+        m.ineq[1] = m.x[1] + 3*m.x[2] <= 7
+        m.ineq[2] = 5*m.x[1] + m.x[2] <= 10
+        m.obj = pyo.Objective(expr=m.x[1] + m.x[2], sense=pyo.maximize)
+        return m
+
+    def test_asl(self):
+        m = self._make_model()
+        # Note that PyomoNLP relies on Pyomo being able to find libpynumero_ASL.
+        # Here, these should be on LD_LIBRARY_PATH or DYLD_LIBRARY_PATH.
+        nlp = PyomoNLP(
+            # Explicitly sort variables and constraints so we know where in Jacobian
+            # each coefficient will be.
+            m, nl_file_options=dict(file_determinism=FileDeterminism.SORT_SYMBOLS)
+        )
+        jac = nlp.evaluate_jacobian()
+        row = [0, 0, 1, 1]
+        col = [0, 1, 0, 1]
+        data = [1.0, 3.0, 5.0, 1.0]
+        expected = set((r, c, d) for r, c, d in zip(row, col, data))
+        actual = set((r, c, d) for r, c, d in zip(jac.row, jac.col, jac.data))
+        assert expected == actual
+
+
 class TestCLP:
 
     exe = os.path.join(IDAES_DIR, "bin", "clp")
@@ -238,4 +271,5 @@ class TestCBC:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    #pytest.main([__file__])
+    TestPyNumeroASL().test_asl()
