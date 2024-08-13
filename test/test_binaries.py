@@ -191,5 +191,51 @@ class TestSensitivity:
         )
 
 
+class TestCLP:
+
+    exe = os.path.join(IDAES_DIR, "bin", "clp")
+
+    def _make_model(self):
+        m = pyo.ConcreteModel()
+        m.x = pyo.Var([1, 2], initialize=0.0, bounds=(0, 10))
+        m.ineq = pyo.Constraint(pyo.PositiveIntegers)
+        m.ineq[1] = m.x[1] + 3*m.x[2] <= 7
+        m.ineq[2] = 5*m.x[1] + m.x[2] <= 10
+        m.obj = pyo.Objective(expr=m.x[1] + m.x[2], sense=pyo.maximize)
+        return m
+
+    def test_clp(self):
+        solution = {"x[1]": 7-15/2.8, "x[2]": 5/2.8}
+        m = self._make_model()
+        solver = pyo.SolverFactory("clp", executable=self.exe)
+        solver.solve(m, tee=TEE)
+        for name, val in solution.items():
+            assert math.isclose(m.find_component(name).value, val, abs_tol=1e-5)
+
+
+class TestCBC:
+
+    exe = os.path.join(IDAES_DIR, "bin", "cbc")
+
+    def _make_model(self):
+        m = pyo.ConcreteModel()
+        m.x = pyo.Var([1, 2], initialize=0.0, bounds=(0, 10))
+        m.y = pyo.Var(domain=pyo.Binary)
+        m.ineq = pyo.Constraint(pyo.PositiveIntegers)
+        m.ineq[1] = m.x[1] + 3*m.x[2] <= 7
+        m.ineq[2] = 5*m.x[1] + m.x[2] <= 10
+        m.ineq[3] = m.y + 1 >= m.x[1]
+        m.obj = pyo.Objective(expr=m.x[1] + m.x[2], sense=pyo.maximize)
+        return m
+
+    def test_cbc(self):
+        solution = {"x[1]": 7-15/2.8, "x[2]": 5/2.8, "y": 1.0}
+        m = self._make_model()
+        solver = pyo.SolverFactory("cbc", executable=self.exe)
+        solver.solve(m, tee=TEE)
+        for name, val in solution.items():
+            assert math.isclose(m.find_component(name).value, val, abs_tol=1e-5)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
