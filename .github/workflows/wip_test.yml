@@ -269,5 +269,7 @@ jobs:
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
         pip list
+        echo "$LD_LIBRARY_PATH"
         python -c "from pyomo.common.dependencies import attempt_import; cyipopt, cyipopt_avail = attempt_import('cyipopt'); print(bool(cyipopt_avail))"
+        python -c "import cyipopt" # Does this fail with library not found?
         pytest -v -rs `pwd`/test
