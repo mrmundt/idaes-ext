@@ -262,8 +262,7 @@ jobs:
         pkg-config --libs --cflags ipopt
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
-        pyomo build-extensions
-        pip install cython cyipopt
+        pip install cyipopt
         #pip install git+https://github.com/mechmotum/cyipopt.git
     - name: Run tests
       run: |
