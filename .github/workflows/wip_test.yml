@@ -173,12 +173,12 @@ jobs:
         if test "${{ matrix.SHORTOS }}" == el; then
           yum -y update
           yum -y install libgfortran blas libgomp lapack
-          yum -y install pkg-config
+          yum -y install pkg-config gcc git
           yum -y install wget curl || yum -y install --allowerasing wget curl
         else
           apt-get update
           apt-get -y install libgfortran5 libgomp1 liblapack3 libblas3 libc6
-          apt-get -y install wget curl pkg-config
+          apt-get -y install wget curl pkg-config gcc git
         fi
         if [ `uname -m` = "aarch64" ]; then 
           wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O $WORKSPACE/miniconda.sh
@@ -254,7 +254,6 @@ jobs:
         ls "$IDAES_DIR/bin/lib/pkgconfig"
         pkg-config --libs --cflags ipopt
         eval "$(/miniconda/bin/conda shell.bash hook)"
-        bash $WORKSPACE/miniconda.sh -b -p $WORKSPACE/miniconda
         conda activate idaes
         pip install cyipopt
         #pip install git+https://github.com/mechmotum/cyipopt.git
