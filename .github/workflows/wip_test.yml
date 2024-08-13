@@ -179,7 +179,7 @@ jobs:
         if test "${{ matrix.SHORTOS }}" == el; then
           yum -y update
           yum -y install libgfortran blas libgomp lapack
-          yum -y install pkg-config gcc g++ git cmake
+          yum -y install pkg-config gcc g++ git cmake || yum -y install --allowerasing pkg-config gcc g++ git cmake
           yum -y install wget curl || yum -y install --allowerasing wget curl
         else
           apt-get update
