@@ -14,6 +14,18 @@ from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from contextlib import nullcontext
 
 
+"""In addition to the above Python dependencies, the following environment must be
+set up to run these tests:
+- IDAES binaries have been downloaded to $HOME/.idaes/bin
+- This directory should be on: PATH and (DY)LD_LIBRARY_PATH
+- idaes-local-*.tar.gz is unpacked (somewhere)
+- idaes-local/lib/pkgconfig is on PKG_CONFIG_PATH
+- CyIpopt is installed with `pip install cyipopt`. If a wheel doesn't build, maybe
+  it needs to be removed from the pip cache with `pip cache remove cyipopt`
+
+"""
+
+
 # TODO: This directory will be wherever we download the binaries that we
 # want to test, likely just in the current working directory.
 if "IDAES_DIR" in os.environ:
@@ -268,6 +280,14 @@ class TestCBC:
         solver.solve(m, tee=TEE)
         for name, val in solution.items():
             assert math.isclose(m.find_component(name).value, val, abs_tol=1e-5)
+
+
+class TestCubicRoots:
+
+    def _make_model(self):
+        m = pyo.ConcreteModel()
+        m.x = pyo.Var([1, 2], initialize=1.0, bounds=(0, 10))
+        m.eq = pyo.Constraint(pyo.PositiveIntegers)
 
 
 if __name__ == "__main__":
