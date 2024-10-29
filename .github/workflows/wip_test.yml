@@ -86,9 +86,9 @@ jobs:
             IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
             echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
             # CyIpopt on Windows uses a custom environment var rather than pkg-config
-            if test "${{ matrix.SHORTOS }}" == win; then
-                echo "IPOPTWINDIR=$IDAES_BIN_DIR" >> $GITHUB_ENV
-            fi
+            #if test "${{ matrix.SHORTOS }}" == win; then
+            #    echo "IPOPTWINDIR=$IDAES_BIN_DIR" >> $GITHUB_ENV
+            #fi
             mkdir -p $IDAES_BIN_DIR
             IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
             if test "${{ matrix.os }}" == macos-14; then
@@ -135,6 +135,8 @@ jobs:
             #    $IDAES_DIR/bin/k_aug --version
       - name: Configure and Install cyipopt
         run: |
+          IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
           echo "$PKG_CONFIG_PATH"
           #pkg-config --libs --cflags ipopt
           #pip install git+https://github.com/mechmotum/cyipopt.git
