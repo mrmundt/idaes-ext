@@ -271,5 +271,4 @@ class TestCBC:
 
 
 if __name__ == "__main__":
-    #pytest.main([__file__])
-    TestPyNumeroASL().test_asl()
+    pytest.main([__file__])
