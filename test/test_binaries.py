@@ -22,6 +22,8 @@ set up to run these tests:
 - idaes-local/lib/pkgconfig is on PKG_CONFIG_PATH
 - CyIpopt is installed with `pip install cyipopt`. If a wheel doesn't build, maybe
   it needs to be removed from the pip cache with `pip cache remove cyipopt`
+- To test the Helmholtz EOS external functions, the IDAES_HELMHOLTZ_DATA_PATH environment
+  variable needs to be set to $HOME/.idaes/bin/helm_data/
 
 """
 
@@ -282,12 +284,47 @@ class TestCBC:
             assert math.isclose(m.find_component(name).value, val, abs_tol=1e-5)
 
 
-class TestCubicRoots:
+class TestExternalFunctions:
 
     def _make_model(self):
         m = pyo.ConcreteModel()
         m.x = pyo.Var([1, 2], initialize=1.0, bounds=(0, 10))
+        m.cubic_root_low = pyo.ExternalFunction(
+            library="cubic_roots", function="cubic_root_l"
+        )
+        m.x_over_exp_x_minus_one = pyo.ExternalFunction(
+            library="functions", function="x_over_exp_x_minus_one"
+        )
+        m.isothermal_compressibility_vap_up = pyo.ExternalFunction(
+            library="general_helmholtz_external",
+            function="isothermal_compressibility_vap_up",
+        )
         m.eq = pyo.Constraint(pyo.PositiveIntegers)
+        m.eq[1] = m.x[1] == m.cubic_root_low(-1, 2, m.x[2])
+        m.obj = pyo.Objective(expr=m.x[1]**2 + m.x[2]**2)
+        return m
+
+    def test_cubic_roots(self):
+        m = self._make_model()
+        cbrt = pyo.value(m.cubic_root_low(-1.0, 2.0, -3.0))
+        assert math.isclose(cbrt**3 - cbrt**2 + 2*cbrt - 3.0, 0.0, abs_tol=1e-8)
+
+    def test_functions(self):
+        m = self._make_model()
+        x = 1.2
+        y = pyo.value(m.x_over_exp_x_minus_one(x))
+        assert math.isclose(y, x / (math.exp(x) - 1.0), abs_tol=1e-8)
+
+    def test_helmholtz(self):
+        m = self._make_model()
+        # delta is P/Pc ration; tau is T/Tc ratio
+        delta = 2.0
+        tau = 3.0
+        # This is a little more difficult to test...
+        # I just chose some random point, and now am asserting that we keep getting
+        # the same answer. This is not based on any first-principles calculation.
+        z = pyo.value(m.isothermal_compressibility_vap_up("co2", delta, tau))
+        assert math.isclose(z, 333.47, abs_tol=0.1)
 
 
 if __name__ == "__main__":
