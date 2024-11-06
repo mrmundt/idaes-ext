@@ -133,7 +133,15 @@ jobs:
                 curl --max-time 150 --retry 8 \
                   -L $URL > $SOLVERS_TAR
             fi
-            echo "Downloaded idaes-solvers .tar.gz file"
+            echo "...downloading idaes-lib"
+            URL=https://github.com/IDAES/idaes-ext
+            RELEASE=$(curl --max-time 150 --retry 8 \
+                -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+            VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+            URL=${URL}/releases/download/3.4.2/idaes-lib-${{ matrix.TARGET }}.tar.gz
+            curl --max-time 150 --retry 8 \
+              -L $URL > $FUNCTIONS_TAR
+            echo "Downloaded idaes-lib .tar.gz file"
             file $SOLVERS_TAR # Hopefully this works on Windows
             cd $IDAES_BIN_DIR
             if test "${{ matrix.SHORTOS }}" == osx; then
