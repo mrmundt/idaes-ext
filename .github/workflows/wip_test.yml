@@ -147,11 +147,15 @@ jobs:
             if test "${{ matrix.SHORTOS }}" == osx; then
                 echo "Unpacking $SOLVERS_TAR into $PWD"
                 tar -xvf $SOLVERS_TAR
+                echo "Unpacking $FUNCTIONS_TAR into $PWD"
+                tar -xvf $FUNCTIONS_TAR
                 echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xvf $IDAES_LOCAL_TAR
             else
                 echo "Unpacking $SOLVERS_TAR into $PWD"
                 tar -xzi < $SOLVERS_TAR
+                echo "Unpacking $FUNCTIONS_TAR into $PWD"
+                tar -xzi < $FUNCTIONS_TAR
                 echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xzi < $IDAES_LOCAL_TAR
             fi
