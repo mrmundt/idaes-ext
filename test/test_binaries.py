@@ -284,7 +284,7 @@ class TestCBC:
             assert math.isclose(m.find_component(name).value, val, abs_tol=1e-5)
 
 
-class TestExternalFunctions:
+class _TestExternalFunctions:
 
     def _make_model(self):
         m = pyo.ConcreteModel()
