@@ -163,7 +163,7 @@ jobs:
             # from idaes-lib (external functions) targz.
             # One way to communicate this is via the IDAES_HELMHOLTZ_DATA_PATH envvar
             # Note that the trailing '/' is necessary here
-            # TODO: How to handle windows?
+            # TODO: How to handle on windows?
             echo "IDAES_HELMHOLTZ_DATA_PATH=$IDAES_DIR/bin/helm_data/" >> $GITHUB_ENV
             echo "Done unpacking tar files"
             echo ""
@@ -298,13 +298,30 @@ jobs:
               URL=${URL}/releases/download/3.4.2/idaes-solvers-${{ matrix.TARGET }}-$DISTRO.tar.gz
               curl --max-time 150 --retry 8 \
                 -L $URL > $SOLVERS_TAR
+              echo "...downloaded idaes-solvers"
           fi
+          echo "...downloading idaes-lib"
+          URL=https://github.com/IDAES/idaes-ext
+          RELEASE=$(curl --max-time 150 --retry 8 \
+              -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+          VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+          URL=${URL}/releases/download/3.4.2/idaes-lib-${{ matrix.TARGET }}-$DISTRO.tar.gz
+          curl --max-time 150 --retry 8 \
+            -L $URL > $FUNCTIONS_TAR
+          echo "...downloaded idaes-lib"
           cd $IDAES_BIN_DIR
           IDAES_LOCAL_TAR=${IDAES_BIN_DIR}/idaes-local-${{ matrix.TARGET }}-$DISTRO.tar.gz
           echo "Unpacking $SOLVERS_TAR into $PWD"
           tar -xzi < $SOLVERS_TAR
+          echo "Unpacking $FUNCTIONS_TAR into $PWD"
+          tar -xzi < $FUNCTIONS_TAR
           echo "Unpacking $IDAES_LOCAL_TAR"
           tar -xzi < $IDAES_LOCAL_TAR
+          # To use the helmholtz EOS external functions, we need data that is unpacked
+          # from idaes-lib (external functions) targz.
+          # One way to communicate this is via the IDAES_HELMHOLTZ_DATA_PATH envvar
+          # Note that the trailing '/' is necessary here
+          echo "IDAES_HELMHOLTZ_DATA_PATH=$IDAES_DIR/bin/helm_data/" >> $GITHUB_ENV
           echo ""
           echo "$IDAES_BIN_DIR"
           ls -l $IDAES_BIN_DIR
