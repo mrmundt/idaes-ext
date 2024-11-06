@@ -1,8 +1,6 @@
 name: Test Binaries
 
 on:
-  push:
-    branches-ignore:
       - main
     tags:
       - '*'
@@ -68,6 +66,10 @@ jobs:
           echo "CURL_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
       - name: Setup IDAES package directories
         run: |
+          # This simulates the ".idaes" directory, where binaries get unpacked
+          # for use by idaes-pse (and other programs). Note that we do not actually
+          # install idaes-pse in this workflow.
+          # ... why do we put the unpacked binaries in cache/tpl?...
           IDAES_DIR="${GITHUB_WORKSPACE}/cache/tpl"
           mkdir -p "$IDAES_DIR"
           DOWNLOAD_DIR="${GITHUB_WORKSPACE}/cache/download"
@@ -79,18 +81,37 @@ jobs:
           pip install pyomo pytest scipy "numpy<2" parameterized
       - name: Download Binaries
         run: |
+            # Per IDAES's current convention (v2.6), we unpack binaries into IDAES_DIR/bin
+            # Note that this will need to change when new binaries are released.
             IDAES_BIN_DIR=$IDAES_DIR/bin
             echo "$IDAES_BIN_DIR" >> $GITHUB_PATH
+            # Unlike `idaes get-extensions`, we need to link against libipopt.so.
+            # We will unpack these libraries into IDAES_DIR/bin/lib. There is no real
+            # logic to this. It will have to change when new binaries are released,
+            # as new binaries will unpack into top-level bin, lib, include, and share
+            # subdirectories.
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
+            # The idaes-local targz that we will unpack contains lib/pkgconfig, which
+            # CyIpopt will need to know about.
             IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
             echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
             # CyIpopt on Windows uses a custom environment var rather than pkg-config
             #if test "${{ matrix.SHORTOS }}" == win; then
             #    echo "IPOPTWINDIR=$IDAES_BIN_DIR" >> $GITHUB_ENV
             #fi
+            # The binaries we unpack are *not* already in a bin subdirectory, so
+            # we have to make this directory here
             mkdir -p $IDAES_BIN_DIR
-            IPOPT_TAR=${DOWNLOAD_DIR}/ipopt.tar.gz
+            # This is what we will call the idaes-solvers targz file once we
+            # download it (which we have not done yet)
+            SOLVERS_TAR=${DOWNLOAD_DIR}/idaes-solvers.tar.gz
+            # This is what we will call the idaes-lib (external functions) targz file
+            FUNCTIONS_TAR=${DOWNLOAD_DIR}/idaes-functions.tar.gz
+            # As of idaes-ext 3.4.2, we distribute petsc separately
+            PETSC_TAR=${DOWNLOAD_DIR}/idaes-petsc.tar.gz
+            # idaes-local*tar.gz is a file we distribute with idaes-solvers that
+            # contains include and pkgconfig files that we need for linking CyIpopt.
             if test "${{ matrix.os }}" == macos-14; then
                 # Basically a bug in the build process -- we forgot to change the name
                 # to aarch64 here.
@@ -98,7 +119,9 @@ jobs:
             else
                 IDAES_LOCAL_TAR=${IDAES_BIN_DIR}/idaes-local-${{ matrix.TARGET }}.tar.gz
             fi
-            if test ! -e $IPOPT_TAR; then
+            # Why are we testing this here? Why would this already exist?
+            # TODO: Download idaes-lib and idaes-petsc as well
+            if test ! -e $SOLVERS_TAR; then
                 echo "...downloading Ipopt"
                 URL=https://github.com/IDAES/idaes-ext
                 RELEASE=$(curl --max-time 150 --retry 8 \
@@ -106,18 +129,18 @@ jobs:
                 VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
                 URL=${URL}/releases/download/3.4.2/idaes-solvers-${{ matrix.TARGET }}.tar.gz
                 curl --max-time 150 --retry 8 \
-                  -L $URL > $IPOPT_TAR
+                  -L $URL > $SOLVERS_TAR
             fi
             echo "Downloaded idaes-solvers .tar.gz file"
-            file $IPOPT_TAR # Hopefully this works on Windows
+            file $SOLVERS_TAR # Hopefully this works on Windows
             cd $IDAES_BIN_DIR
             if test "${{ matrix.SHORTOS }}" == osx; then
-                echo "Unpacking $IPOPT_TAR into $PWD"
+                echo "Unpacking $SOLVERS_TAR into $PWD"
                 tar -xvf $IPOPT_TAR
                 echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xvf $IDAES_LOCAL_TAR
             else
-                echo "Unpacking $IPOPT_TAR into $PWD"
+                echo "Unpacking $SOLVERS_TAR into $PWD"
                 tar -xzi < $IPOPT_TAR
                 echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xzi < $IDAES_LOCAL_TAR
@@ -136,6 +159,7 @@ jobs:
       - name: Configure and Install cyipopt
         run: |
           IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
+          # Why is this not already set?
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
           echo "$PKG_CONFIG_PATH"
           #pkg-config --libs --cflags ipopt
