@@ -23,7 +23,8 @@ set up to run these tests:
 - CyIpopt is installed with `pip install cyipopt`. If a wheel doesn't build, maybe
   it needs to be removed from the pip cache with `pip cache remove cyipopt`
 - To test the Helmholtz EOS external functions, the IDAES_HELMHOLTZ_DATA_PATH environment
-  variable needs to be set to $HOME/.idaes/bin/helm_data/
+  variable needs to be set to $HOME/.idaes/bin/helm_data/ (Note that the trailing '/'
+  appears to be necessar)
 
 """
 
