@@ -142,6 +142,15 @@ jobs:
             curl --max-time 150 --retry 8 \
               -L $URL > $FUNCTIONS_TAR
             echo "Downloaded idaes-lib .tar.gz file"
+            echo "...downloading idaes-petsc"
+            URL=https://github.com/IDAES/idaes-ext
+            RELEASE=$(curl --max-time 150 --retry 8 \
+                -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+            VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+            URL=${URL}/releases/download/3.4.2/idaes-petsc-${{ matrix.TARGET }}.tar.gz
+            curl --max-time 150 --retry 8 \
+              -L $URL > $PETSC_TAR
+            echo "Downloaded idaes-petsc .tar.gz file"
             file $SOLVERS_TAR # Hopefully this works on Windows
             cd $IDAES_BIN_DIR
             if test "${{ matrix.SHORTOS }}" == osx; then
@@ -149,13 +158,17 @@ jobs:
                 tar -xvf $SOLVERS_TAR
                 echo "Unpacking $FUNCTIONS_TAR into $PWD"
                 tar -xvf $FUNCTIONS_TAR
-               echo "Unpacking $IDAES_LOCAL_TAR"
+                echo "Unpacking $PETSC_TAR into $PWD"
+                tar -xvf $PETSC_TAR
+                echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xvf $IDAES_LOCAL_TAR
             else
                 echo "Unpacking $SOLVERS_TAR into $PWD"
                 tar -xzi < $SOLVERS_TAR
                 echo "Unpacking $FUNCTIONS_TAR into $PWD"
                 tar -xzi < $FUNCTIONS_TAR
+                echo "Unpacking $PESTC_TAR into $PWD"
+                tar -xzi < $PESTC_TAR
                 echo "Unpacking $IDAES_LOCAL_TAR"
                 tar -xzi < $IDAES_LOCAL_TAR
             fi
