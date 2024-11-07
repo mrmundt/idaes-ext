@@ -5,6 +5,7 @@ import parameterized
 import itertools
 import scipy.sparse as sparse
 import pyomo.environ as pyo
+from pyomo.dae import ContinuousSet, DerivativeVar
 import pyomo.common.unittest as unittest
 from pyomo.common.collections import ComponentMap
 from pyomo.repn.util import FileDeterminism
@@ -326,6 +327,31 @@ class TestExternalFunctions:
         # the same answer. This is not based on any first-principles calculation.
         z = pyo.value(m.isothermal_compressibility_vap_up("co2", delta, tau))
         assert math.isclose(z, 333.47, abs_tol=0.1)
+
+
+class TestPetsc:
+
+    exe = os.path.join(IDAES_DIR, "bin", "petsc")
+
+    def test_petsc_snes(self):
+        m = pyo.ConcreteModel()
+        m.x = pyo.Var([1, 2], initialize=1.0)
+        m.eq = pyo.Constraint(pyo.PositiveIntegers)
+        m.eq[1] = m.x[1] - 2*pyo.log(m.x[2]) == 3
+        m.eq[2] = m.x[1] * m.x[2]**1.5 == 1
+
+        solver = pyo.SolverFactory("petsc", executable=self.exe)
+        res = solver.solve(m, tee=True)
+        pyo.assert_optimal_termination(res)
+        # I just pulled these numbers from a successful solve.
+        assert math.isclose(m.x[1].value, 2.045, abs_tol=0.01)
+        assert math.isclose(m.x[2].value, 0.621, abs_tol=0.01)
+        # Just checking that we actually ran SNES here (and not some
+        # other petsc solver)
+        assert res.solver.message == "SNES_CONVERGED_FNORM_ABS"
+
+    #def test_petsc_ts(self):
+    #    m = pyo.ConcreteModel()
 
 
 if __name__ == "__main__":
