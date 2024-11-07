@@ -401,13 +401,14 @@ class TestPetsc:
         m.dae_link[m.height[t]] = 0
         m.dae_link[m.dheight_dt[t]] = 0
 
-        options = {"--dae_solve": ""}
+        options = {"--dae_solve": "", "--ts_init_time": 0.0, "--ts_max_time": tf}
         solver = pyo.SolverFactory("petsc", executable=self.exe, options=options)
 
         res = solver.solve(m, tee=True)
         pyo.assert_optimal_termination(res)
+        m.height.pprint()
 
-        assert math.isclose(m.height[tf].value, 0.09, abs_tol=0.01)
+        assert math.isclose(m.height[tf].value, 0.43, abs_tol=0.01)
 
     def _test_petsc_ts(self):
         # Level control model
