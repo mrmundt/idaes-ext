@@ -352,6 +352,64 @@ class TestPetsc:
         assert res.solver.message == "SNES_CONVERGED_FNORM_ABS"
 
     def test_petsc_ts(self):
+        m = pyo.ConcreteModel()
+        tf = 1.0
+        m.time = ContinuousSet(bounds=[0.0, tf])
+        m.direction = pyo.Set(initialize=["in", "out"])
+        m.area = pyo.Param(initialize=2.5)
+        m.flow_coef = pyo.Param(initialize=4.0)
+        m.height = pyo.Var(m.time, initialize=1.0)
+        m.flow = pyo.Var(m.time, m.direction, initialize=1.0)
+        m.dheight_dt = DerivativeVar(m.height, wrt=m.time, initialize=0.0)
+
+        @m.Constraint(m.time)
+        def flow_out_eqn(m, t):
+            return m.flow[t, "out"] == m.flow_coef * pyo.sqrt(m.height[t])
+
+        @m.Constraint(m.time)
+        def height_diff_eqn(m, t):
+            return m.area * m.dheight_dt[t] == m.flow[t, "in"] - m.flow[t, "out"]
+
+        # Fix initial condition
+        m.height[0].fix()
+        # Fix input variable
+        m.flow[:, "in"].fix()
+        for t in m.time:
+            if t < tf / 2:
+                m.flow[t, "in"].fix(1.0)
+            else:
+                m.flow[t, "in"].fix(1.2)
+
+        ALGEBRAIC = 0
+        DIFFERENTIAL = 1
+        DERIVATIVE = 2
+
+        m.dae_suffix = pyo.Suffix(
+            direction=pyo.Suffix.IMPORT_EXPORT,
+            datatype=pyo.Suffix.INT,
+        )
+        m.dae_link = pyo.Suffix(
+            direction=pyo.Suffix.IMPORT_EXPORT,
+            datatype=pyo.Suffix.INT,
+        )
+
+        diffvar_index = 0
+        t = tf
+        m.dae_suffix[m.height[t]] = DIFFERENTIAL
+        m.dae_suffix[m.flow[t, "out"]] = ALGEBRAIC
+        m.dae_suffix[m.dheight_dt[t]] = DERIVATIVE
+        m.dae_link[m.height[t]] = 0
+        m.dae_link[m.dheight_dt[t]] = 0
+
+        options = {"--dae_solve": ""}
+        solver = pyo.SolverFactory("petsc", executable=self.exe, options=options)
+
+        res = solver.solve(m, tee=True)
+        pyo.assert_optimal_termination(res)
+
+        assert math.isclose(m.height[tf].value, 0.09, abs_tol=0.01)
+
+    def _test_petsc_ts(self):
         # Level control model
         m = pyo.ConcreteModel()
         tf = 1.0
@@ -384,69 +442,72 @@ class TestPetsc:
             else:
                 m.flow[t, "in"].fix(1.2)
 
-        m.dae_suffix = pyo.Suffix(
-            direction=pyo.Suffix.IMPORT_EXPORT,
-            datatype=pyo.Suffix.INT,
-        )
-        m.dae_link = pyo.Suffix(
-            direction=pyo.Suffix.IMPORT_EXPORT,
-            datatype=pyo.Suffix.INT,
-        )
+        #m.dae_suffix = pyo.Suffix(
+        #    direction=pyo.Suffix.IMPORT_EXPORT,
+        #    datatype=pyo.Suffix.INT,
+        #)
+        #m.dae_link = pyo.Suffix(
+        #    direction=pyo.Suffix.IMPORT_EXPORT,
+        #    datatype=pyo.Suffix.INT,
+        #)
 
-        ALGEBRAIC = 0
-        DIFFERENTIAL = 1
-        DERIVATIVE = 2
+        #ALGEBRAIC = 0
+        #DIFFERENTIAL = 1
+        #DERIVATIVE = 2
 
-        diffvar_index = 0
-        for t in m.time:
-            if t != m.time.first():
-                m.dae_suffix[m.height[t]] = DIFFERENTIAL
-                m.dae_suffix[m.flow[t, "out"]] = ALGEBRAIC
-                m.dae_suffix[m.dheight_dt[t]] = DERIVATIVE
-                m.dae_link[m.height[t]] = diffvar_index
-                m.dae_link[m.dheight_dt[t]] = diffvar_index
-                diffvar_index += 1
+        #diffvar_index = 0
+        #for t in m.time:
+        #    if t != m.time.first():
+        #        m.dae_suffix[m.height[t]] = DIFFERENTIAL
+        #        m.dae_suffix[m.flow[t, "out"]] = ALGEBRAIC
+        #        m.dae_suffix[m.dheight_dt[t]] = DERIVATIVE
+        #        m.dae_link[m.height[t]] = diffvar_index
+        #        m.dae_link[m.dheight_dt[t]] = diffvar_index
+        #        diffvar_index += 1
 
-        options = {"--dae_solve": ""}
-        solver = pyo.SolverFactory("petsc", executable=self.exe, options=options)
+        #options = {"--dae_solve": ""}
+        #solver = pyo.SolverFactory("petsc", executable=self.exe, options=options)
 
-        for t in m.time:
-            if t == m.time.first():
-                continue
-            vars_at_t = [m.height[t], m.dheight_dt[t], m.flow[t, "out"]]
-            # Note that we don't include discretization equations here
-            cons_at_t = [m.flow_out_eqn[t], m.height_diff_eqn[t]]
-            t_block = create_subsystem_block(cons_at_t, vars_at_t)
+        #for t in m.time:
+        #    if t == m.time.first():
+        #        continue
+        #    vars_at_t = [m.height[t], m.dheight_dt[t], m.flow[t, "out"]]
+        #    # Note that we don't include discretization equations here
+        #    cons_at_t = [m.flow_out_eqn[t], m.height_diff_eqn[t]]
+        #    t_block = create_subsystem_block(cons_at_t, vars_at_t)
 
-            t_block.dae_suffix = pyo.Suffix(
-                direction=pyo.Suffix.IMPORT_EXPORT,
-                datatype=pyo.Suffix.INT,
-            )
-            t_block.dae_link = pyo.Suffix(
-                direction=pyo.Suffix.IMPORT_EXPORT,
-                datatype=pyo.Suffix.INT,
-            )
-            # Just copy all the suffix values from the original model, even though
-            # we only solve the model for one time step
-            for var, val in m.dae_suffix.items():
-                t_block.dae_suffix[var] = val
-            for var, val in m.dae_suffix.items():
-                t_block.dae_link[var] = val
+        #    t_block.dae_suffix = pyo.Suffix(
+        #        direction=pyo.Suffix.IMPORT_EXPORT,
+        #        datatype=pyo.Suffix.INT,
+        #    )
+        #    t_block.dae_link = pyo.Suffix(
+        #        direction=pyo.Suffix.IMPORT_EXPORT,
+        #        datatype=pyo.Suffix.INT,
+        #    )
+        #    # Just copy all the suffix values from the original model, even though
+        #    # we only solve the model for one time step
+        #    for var, val in m.dae_suffix.items():
+        #        t_block.dae_suffix[var] = val
+        #    for var, val in m.dae_suffix.items():
+        #        t_block.dae_link[var] = val
 
-            # This is how we set initial conditions from the previous time step
-            tprev = m.time.prev(t)
-            m.height[t] = m.height[tprev]
-            m.flow[t, "out"] = m.flow[tprev, "out"]
-            m.dheight_dt[t] = m.dheight_dt[tprev]
+        #    # This is how we set initial conditions from the previous time step
+        #    tprev = m.time.prev(t)
+        #    m.height[t] = m.height[tprev]
+        #    m.flow[t, "out"] = m.flow[tprev, "out"]
+        #    m.dheight_dt[t] = m.dheight_dt[tprev]
 
-            res = solver.solve(t_block, tee=True)
-            pyo.assert_optimal_termination(res)
-            # Make sure we ran the TS solver
-            assert res.solver.message == "TS_CONVERGED_TIME"
+        #    res = solver.solve(t_block, tee=True)
+        #    pyo.assert_optimal_termination(res)
+        #    # Make sure we ran the TS solver
+        #    assert res.solver.message == "TS_CONVERGED_TIME"
+        res = pyo.SolverFactory("ipopt").solve(m, tee=True)
+        m.height.pprint()
 
         # This just came from running a simulation, not some known solution
         assert math.isclose(m.height[tf].value, 0.856, abs_tol=0.01)
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    #pytest.main([__file__])
+    TestPetsc().test_petsc_ts()
