@@ -218,7 +218,11 @@ jobs:
               echo "PATH=$PATH:$IPOPTWINDIR/lib" >> $GITHUB_ENV
               # Library must end with .lib?
               cp $IPOPTWINDIR/lib/libipopt.dll.a $IPOPTWINDIR/lib/libipopt.dll.a.lib
-              pip install -v git+https://github.com/Robbybp/cyipopt.git@idaes-ipopt
+              git clone -b idaes-ipopt https://github.com/Robbybp/cyipopt.git
+              cd cyipopt
+              python setup.py install
+              cd ..
+              #pip install -v git+https://github.com/Robbybp/cyipopt.git@idaes-ipopt
               python -c "import cyipopt"
           else
               pip install -v cyipopt
