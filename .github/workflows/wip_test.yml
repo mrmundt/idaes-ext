@@ -214,6 +214,8 @@ jobs:
               ls -l $IPOPTWINDIR/lib
               echo "\nIPOPTWINDIR/include/coin-or contents:"
               ls -l $IPOPTWINDIR/include/coin-or
+              # Does putting this on the path make the library discoverable?
+              echo "PATH=$PATH:$IPOPTWINDIR/lib" >> $GITHUB_ENV
               # Library must end with .lib?
               cp $IPOPTWINDIR/lib/libipopt.dll.a $IPOPTWINDIR/lib/libipopt.dll.a.lib
               pip install -v git+https://github.com/Robbybp/cyipopt.git@idaes-ipopt
