@@ -217,6 +217,7 @@ jobs:
               # Library must end with .lib?
               cp $IPOPTWINDIR/lib/libipopt.dll.a $IPOPTWINDIR/lib/libipopt.dll.a.lib
               pip install -v git+https://github.com/Robbybp/cyipopt.git@idaes-ipopt
+              python -c "import cyipopt"
           else
               pip install -v cyipopt
           fi
