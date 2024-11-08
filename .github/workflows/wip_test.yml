@@ -214,6 +214,8 @@ jobs:
               ls -l $IPOPTWINDIR/lib
               echo "\nIPOPTWINDIR/include/coin-or contents:"
               ls -l $IPOPTWINDIR/include/coin-or
+              # Library must end with .lib?
+              cp $IPOPTWINDIR/lib/libipopt.dll.a $IPOPTWINDIR/lib/libipopt.dll.a.lib
               pip install -v git+https://github.com/Robbybp/cyipopt.git@idaes-ipopt
           else
               pip install -v cyipopt
