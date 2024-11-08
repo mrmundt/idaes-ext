@@ -214,9 +214,10 @@ jobs:
               ls -l $IPOPTWINDIR/lib
               echo "\nIPOPTWINDIR/include/coin-or contents:"
               ls -l $IPOPTWINDIR/include/coin-or
-              cp $IPOPTWINDIR/lib/libipopt.dll.a $IPOPTWINDIR/lib/ipopt.dll.lib
+              pip install -v git+https://github.com/mechmotum/cyipopt.git
+          else
+              pip install -v cyipopt
           fi
-          pip install -v cyipopt
       - name: Run tests
         run: |
           pytest -v -rs `pwd`/test
