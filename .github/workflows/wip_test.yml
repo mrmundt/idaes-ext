@@ -206,8 +206,15 @@ jobs:
           #else
           #    pip install cyipopt
           #fi
-          echo "$IPOPTWINDIR"
-          ls -l $IPOPTWINDIR
+          if test "${{ matrix.SHORTOS }}" == win; then
+              echo "IPOPTWINDIR = $IPOPTWINDIR"
+              echo "IPOPTWINDIR contents:"
+              ls -l $IPOPTWINDIR
+              echo "\nIPOPTWINDIR/lib contents:"
+              ls -l $IPOPTWINDIR/lib
+              echo "\nIPOPTWINDIR/include/coin-or contents:"
+              ls -l $IPOPTWINDIR/include/coin-or
+          fi
           pip install cyipopt
       - name: Run tests
         run: |
