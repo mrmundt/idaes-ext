@@ -99,9 +99,9 @@ jobs:
             IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
             echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$IDAES_PC_DIR" >> $GITHUB_ENV
             # CyIpopt on Windows uses a custom environment var rather than pkg-config
-            #if test "${{ matrix.SHORTOS }}" == win; then
-            #    echo "IPOPTWINDIR=$IDAES_BIN_DIR" >> $GITHUB_ENV
-            #fi
+            if test "${{ matrix.SHORTOS }}" == win; then
+                echo "IPOPTWINDIR=$IDAES_BIN_DIR" >> $GITHUB_ENV
+            fi
             # The binaries we unpack are *not* already in a bin subdirectory, so
             # we have to make this directory here
             mkdir -p $IDAES_BIN_DIR
@@ -197,8 +197,17 @@ jobs:
           echo "$PKG_CONFIG_PATH"
           #pkg-config --libs --cflags ipopt
           #pip install git+https://github.com/mechmotum/cyipopt.git
-          ls $IDAES_DIR/bin
-          ls $IDAES_DIR/bin/lib
+          #if test "${{ matrix.SHORTOS }}" == win; then
+          #    echo "$IPOPTWINDIR"
+          #    git clone https://github.com/mechmotum/cyipopt.git
+          #    cd cyipopt
+          #    python setup.py install
+          #    cd ..
+          #else
+          #    pip install cyipopt
+          #fi
+          echo "$IPOPTWINDIR"
+          ls -l $IPOPTWINDIR
           pip install cyipopt
       - name: Run tests
         run: |
