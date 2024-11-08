@@ -214,8 +214,9 @@ jobs:
               ls -l $IPOPTWINDIR/lib
               echo "\nIPOPTWINDIR/include/coin-or contents:"
               ls -l $IPOPTWINDIR/include/coin-or
+              cp $IPOPTWINDIR/lib/libipopt.dll.a $IPOPTWINDIR/lib/ipopt.dll.lib
           fi
-          pip install cyipopt
+          pip install -v cyipopt
       - name: Run tests
         run: |
           pytest -v -rs `pwd`/test
