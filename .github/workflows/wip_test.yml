@@ -214,7 +214,7 @@ jobs:
               ls -l $IPOPTWINDIR/lib
               echo "\nIPOPTWINDIR/include/coin-or contents:"
               ls -l $IPOPTWINDIR/include/coin-or
-              pip install -v git+https://github.com/mechmotum/cyipopt.git
+              pip install -v git+https://github.com/Robbybp/cyipopt.git@idaes-ipopt
           else
               pip install -v cyipopt
           fi
