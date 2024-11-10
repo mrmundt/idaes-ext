@@ -220,7 +220,8 @@ jobs:
               # For now, just copy all DLLs into this directory. Not all
               # are strictly necessary.
               echo "Copying extra DLLs to bin"
-              cp $IPOPTWINDIR/*dll $IPOPTWINDIR/bin/
+              echo "IDAES_BIN_DIR = $IDAES_BIN_DIR"
+              cp $IPOPTWINDIR/libblas.dll $IPOPTWINDIR/bin/
               # Does putting this on the path make the library discoverable?
               #echo "PATH=$PATH:$IPOPTWINDIR/lib" >> $GITHUB_ENV
               # Library must end with .lib?
