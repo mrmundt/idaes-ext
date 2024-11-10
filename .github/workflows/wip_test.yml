@@ -220,8 +220,19 @@ jobs:
               # For now, just copy all DLLs into this directory. Not all
               # are strictly necessary.
               echo "Copying extra DLLs to bin"
+              # Why isn't this var set anymore?
               echo "IDAES_BIN_DIR = $IDAES_BIN_DIR"
               cp $IPOPTWINDIR/libblas.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libbz2-1.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libgcc_s_seh-1.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libipopt-3.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/liblapack.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libquadmath-0.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libsipopt-3.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libssp-0.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libstdc++-6.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/libwinpthread-1.dll $IPOPTWINDIR/bin/
+              cp $IPOPTWINDIR/zlib1.dll $IPOPTWINDIR/bin/
               # Does putting this on the path make the library discoverable?
               #echo "PATH=$PATH:$IPOPTWINDIR/lib" >> $GITHUB_ENV
               # Library must end with .lib?
