@@ -216,9 +216,11 @@ jobs:
               ls -l $IPOPTWINDIR/include/coin-or
               # Need to make a bin directory and put extra DLLs there
               mkdir $IPOPTWINDIR/bin
+              echo "Made directory $IPOPTWINDIR/bin"
               # For now, just copy all DLLs into this directory. Not all
               # are strictly necessary.
-              cp $IDAES_BIN_DIR/*dll $IPOPTWINDIR/bin/
+              echo "Copying extra DLLs to bin"
+              cp $IPOPTWINDIR/*dll $IPOPTWINDIR/bin/
               # Does putting this on the path make the library discoverable?
               #echo "PATH=$PATH:$IPOPTWINDIR/lib" >> $GITHUB_ENV
               # Library must end with .lib?
