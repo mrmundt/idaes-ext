@@ -428,6 +428,8 @@ jobs:
       run: |
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
+        cat $GITHUB_PATH
+        export PATH=$PATH:$IDAES_DIR/bin
         echo "PATH = $PATH"
         echo "LD_LIBRARY_PATH = $LD_LIBRARY_PATH"
         echo "IDAES_DIR = $IDAES_DIR"
