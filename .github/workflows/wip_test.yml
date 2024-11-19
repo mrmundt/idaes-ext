@@ -340,6 +340,7 @@ jobs:
           # logic to this. It will have to change when new binaries are released,
           # as new binaries will unpack into top-level bin, lib, include, and share
           # subdirectories.
+          echo "PATH=$PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR/lib:$IDAES_BIN_DIR" >> $GITHUB_ENV
           #echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
