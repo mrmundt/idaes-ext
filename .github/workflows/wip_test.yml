@@ -340,7 +340,9 @@ jobs:
           # as new binaries will unpack into top-level bin, lib, include, and share
           # subdirectories.
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           # The idaes-local targz that we will unpack contains lib/pkgconfig, which
           # CyIpopt will need to know about.
           IDAES_PC_DIR=$IDAES_BIN_DIR/lib/pkgconfig
@@ -424,8 +426,5 @@ jobs:
       run: |
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
-        pip list
         echo "$LD_LIBRARY_PATH"
-        ls "$IDAES_DIR/bin/lib"
-        python -c "import cyipopt" # Does this fail with library not found?
         pytest -v -rs `pwd`/test
