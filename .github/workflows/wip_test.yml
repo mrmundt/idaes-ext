@@ -421,7 +421,7 @@ jobs:
         # Building extensions here shouldn't be necessary, as we distribute
         # libpynumero_ASL, but our Rocky8 tests only pass if we build from
         # scratch here...
-        pyomo build-extensions
+        #pyomo build-extensions
         pip install cyipopt
         #pip install git+https://github.com/mechmotum/cyipopt.git
     - name: Run tests
