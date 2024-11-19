@@ -339,7 +339,7 @@ jobs:
           # logic to this. It will have to change when new binaries are released,
           # as new binaries will unpack into top-level bin, lib, include, and share
           # subdirectories.
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR/lib:$IDAES_BIN_DIR" >> $GITHUB_ENV
           #echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
           echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR/lib" >> $GITHUB_ENV
           #echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IDAES_BIN_DIR" >> $GITHUB_ENV
@@ -426,5 +426,6 @@ jobs:
       run: |
         eval "$(/miniconda/bin/conda shell.bash hook)"
         conda activate idaes
-        echo "$LD_LIBRARY_PATH"
+        echo "LD_LIBRARY_PATH = $LD_LIBRARY_PATH"
+        ls "$IDAES_BIN_DIR"
         pytest -v -rs `pwd`/test
