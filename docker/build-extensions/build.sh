@@ -3,16 +3,16 @@ mname=$2
 
 repo=$3
 branch=$4
-network=$5
+tag=$5
 if [ ! "$repo" ]; then
     repo="https://github.com/mrmundt/idaes-ext.git"
 fi
 if [ ! "$branch" ]; then
     branch="modernize"
 fi
-if [ ! "$network" ]; then
+if [ ! "$tag" ]; then
     # This is to support if there are non-standard images, e.g., internal ones
-    network="latest"
+    tag="latest"
 fi
 
 solver_buildargs=$6
@@ -22,27 +22,27 @@ echo "build.sh script arguments:
     Arch: $mname
     Repo: $repo
     Branch: $branch
-    Network: $network
+    tag: $tag
     Args to compile_solvers.sh: $solver_buildargs
 "
 
 if [ "$flavor" = "windows" ]; then
-  image="idaes-ext-windows-build:$network"
+  image="idaes-ext-windows-build:$tag"
   wdir="c:/repo"
 elif [ "$flavor" = "el8" ]; then
-  image="idaes-ext-el8-build:$network"
+  image="idaes-ext-el8-build:$tag"
   wdir="/repo"
 elif [ "$flavor" = "el9" ]; then
-  image="idaes-ext-el9-build:$network"
+  image="idaes-ext-el9-build:$tag"
   wdir="/repo"
 elif [ "$flavor" = "ubuntu2004" ]; then
-  image="idaes-ext-ubuntu2004-build:$network"
+  image="idaes-ext-ubuntu2004-build:$tag"
   wdir="/repo"
 elif [ "$flavor" = "ubuntu2204" ]; then
-  image="idaes-ext-ubuntu2204-build:$network"
+  image="idaes-ext-ubuntu2204-build:$tag"
   wdir="/repo"
 elif [ "$flavor" = "ubuntu2404" ]; then
-  image="idaes-ext-ubuntu2404-build:$network"
+  image="idaes-ext-ubuntu2404-build:$tag"
   wdir="/repo"
 else
   echo "Specify flavor in {el8, el9, ubuntu2004, ubuntu2204, ubuntu2404, windows}."
