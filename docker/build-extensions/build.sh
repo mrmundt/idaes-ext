@@ -56,7 +56,7 @@ docker exec "$flavor"_"$mname"_build_tmp sh -c "cp ${wdir}/extras/* ${wdir}"
 docker exec "$flavor"_"$mname"_build_tmp sh -c "cd ${wdir}/extras && pwd"
 docker exec "$flavor"_"$mname"_build_tmp sh -c "cd ${wdir} && git clone ${repo} && cd idaes-ext && git checkout ${branch}"
 docker exec "$flavor"_"$mname"_build_tmp sh -c "cd ${wdir}/idaes-ext && bash scripts/compile_solvers.sh ${flavor} ${solver_buildargs}"
-docker exec "$flavor"_"$mname"_build_tmp sh -c "cd ${wdir}/idaes-ext && bash scripts/compile_libs.sh ${flavor}"
+#docker exec "$flavor"_"$mname"_build_tmp sh -c "cd ${wdir}/idaes-ext && bash scripts/compile_libs.sh ${flavor}"
 docker stop "$flavor"_"$mname"_build_tmp
 
 docker cp "$flavor"_"$mname"_build_tmp:"$wdir"/idaes-ext/dist-functions/idaes-functions-"$flavor"-"$mname".tar.gz .
