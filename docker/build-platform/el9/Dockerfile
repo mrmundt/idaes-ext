@@ -1,12 +1,16 @@
-FROM rockylinux:8
+FROM rockylinux:9
 
 # Install dependencies
-RUN yum -y update; yum clean all; \
-    yum -y install git make gcc gcc-c++ gcc-gfortran cmake; \
-    yum -y install wget unzip patch which file valgrind flex bison; \
-    yum -y install dnf-plugins-core; \
-    yum config-manager --set-enabled powertools; \
-    yum -y install lapack-devel python3 findutils diffutils;
+RUN dnf -y update; dnf clean all; \
+    dnf config-manager --set-enabled crb; \
+    dnf -y install git make gcc gcc-c++ gcc-gfortran lapack-devel; \
+    dnf -y install wget unzip patch which file cmake; \
+    dnf -y install python3 python-devel findutils diffutils boost boost-devel;
+
+# Fix the symlinks: https://bugs.rockylinux.org/view.php?id=7855
+RUN cd /usr/lib64; \
+    ln -sf libblas.so.3.9.0 libblas.so.3; \
+    ln -sf liblapack.so.3.9.0 liblapack.so.3;
 
 # Create directory structure
 RUN mkdir repo
@@ -30,4 +34,5 @@ RUN cd repo; \
     sh bootstrap.sh --prefix=/usr/local/; \
     chmod a+x ./b2; \
     ./b2 install || true;
+
 

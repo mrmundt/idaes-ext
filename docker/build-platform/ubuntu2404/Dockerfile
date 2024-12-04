@@ -1,12 +1,17 @@
-FROM rockylinux:8
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Fix a symlink
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime;
 
 # Install dependencies
-RUN yum -y update; yum clean all; \
-    yum -y install git make gcc gcc-c++ gcc-gfortran cmake; \
-    yum -y install wget unzip patch which file valgrind flex bison; \
-    yum -y install dnf-plugins-core; \
-    yum config-manager --set-enabled powertools; \
-    yum -y install lapack-devel python3 findutils diffutils;
+RUN apt-get -y update; \
+    apt-get -y upgrade; \
+    apt-get -y install ubuntu-dev-tools liblapack-dev libblas-dev unzip; \
+    apt-get -y install gfortran cmake; \
+    apt-get -y install pkg-config bison; \
+    apt-get -y install flex valgrind;
 
 # Create directory structure
 RUN mkdir repo
@@ -30,4 +35,3 @@ RUN cd repo; \
     sh bootstrap.sh --prefix=/usr/local/; \
     chmod a+x ./b2; \
     ./b2 install || true;
-

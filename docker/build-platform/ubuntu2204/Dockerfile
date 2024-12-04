@@ -1,31 +1,37 @@
 FROM ubuntu:22.04
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
+# Fix a symlink
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime;
+
+# Install dependencies
+RUN apt-get -y update; \
+    apt-get -y upgrade; \
+    apt-get -y install ubuntu-dev-tools liblapack-dev libblas-dev unzip; \
+    apt-get -y install gfortran cmake; \
+    apt-get -y install pkg-config bison; \
+    apt-get -y install flex valgrind;
+
+# Create directory structure
 RUN mkdir repo
 
-RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime;
-RUN apt-get -y update;
-RUN apt-get -y upgrade;
-RUN apt-get -y install ubuntu-dev-tools liblapack-dev libblas-dev unzip
-RUN apt-get -y install gfortran cmake
-RUN apt-get -y install pkg-config bison
-RUN apt-get -y install flex valgrind
-
+# Install PETSc
 RUN cd repo; \
-    wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.19.2.tar.gz; \
-    tar -zxvf petsc-3.19.2.tar.gz; \
-    mv petsc-3.19.2 petsc; \
+    wget https://gitlab.com/petsc/petsc/-/archive/v3.22.1/petsc-v3.22.1.tar.gz; \
+    tar -zxvf petsc-v3.22.1.tar.gz; \
+    mv petsc-v3.22.1 petsc; \
     mkdir petsc-dist; \
     cd petsc; \
-    ./configure --with-debug=0 --with-shared=0 --with-mpi=0 --with-fortran-bindings=0 --download-metis --download-mumps --with-mumps-serial=1 --prefix=/repo/petsc-dist; \
+    ./configure configure --with-debug=0 --with-shared=0 --with-mpi=0 --with-fortran-bindings=0 --download-metis --download-mumps --with-mumps-serial=1 --prefix=/repo/petsc-dist; \
     make;\
     make install;
 
+# Install boost
 RUN cd repo; \
-    wget https://boostorg.jfrog.io/artifactory/main/release/1.80.0/source/boost_1_80_0.tar.gz; \
-    tar -zxvf boost_1_80_0.tar.gz; \
-    cd ./boost_1_80_0; \
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.86.0/source/boost_1_86_0.tar.gz; \
+    tar -zxvf boost_1_86_0.tar.gz; \
+    cd ./boost_1_86_0; \
     sh bootstrap.sh --prefix=/usr/local/; \
     chmod a+x ./b2; \
-    ./b2 install;
+    ./b2 install || true;
