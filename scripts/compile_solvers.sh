@@ -202,7 +202,7 @@ cd ThirdParty/Mumps
 # We compile without metis to get around a suspected Metis/Mumps version
 # incompatibility. See https://github.com/IDAES/idaes-ext/issues/268
 # ThirdParty/Metis uses v4.0.3, while ThirdParty/Mumps uses the latest release.
-METISFLAG="--with-metis"
+METISFLAG="--without-metis"
 ./configure --disable-shared --enable-static $METISFLAG \
  --prefix=$IDAES_EXT/coinbrew/dist FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
 make $PARALLEL
