@@ -3,7 +3,7 @@
 osname=$1; shift
 if [ -z $osname ]
 then
-  echo "Must spcify plaform in {windows, darwin, el7, el8, ubuntu1804, ubuntu2004}."
+  echo "Must specify platform in {windows, darwin, el8, el9, ubuntu2004, ubuntu2204, ubuntu2404}."
   exit 1
 fi
 

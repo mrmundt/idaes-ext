@@ -11,8 +11,8 @@ set -e
 osname=$1;
 if [ -z $osname ]
 then
-  echo "Must spcify plaform in {windows, darwin, el7, el8, "
-  echo "  ubuntu180, ubuntu2004, ubuntu2204}."
+  echo "Must specify platform in {windows, darwin, el8, el9, "
+  echo "  ubuntu2004, ubuntu2204, ubuntu2404}."
   exit 1
 fi
 
@@ -47,10 +47,8 @@ else
 fi
 
 # Set a few basic things
-export IPOPT_BRANCH="idaes-3.13"
-export IPOPT_REPO="https://github.com/idaes/Ipopt"
-export IPOPT_L1_BRANCH="restoration_mod"
-export IPOPT_L1_REPO="https://github.com/idaes/Ipopt"
+export IPOPT_BRANCH="stable/3.14"
+export IPOPT_REPO="https://github.com/mrmundt/Ipopt"
 export PYNU_BRANCH="main"
 export PYNU_REPO="https://github.com/pyomo/pyomo"
 export K_AUG_BRANCH="default"
@@ -122,15 +120,6 @@ cp $IDAES_EXT/scripts/CouenneProblem.hpp.patch ./
 patch Couenne/src/problem/CouenneProblem.hpp < CouenneProblem.hpp.patch
 patch Couenne/src/cut/sdpcuts/CouenneMatrix.hpp < CouenneMatrix.hpp.patch
 cd ..
-rm -rf Ipopt # Remove the version of Ipopt gotten as a dependency
-bash coinbrew fetch $IPOPT_L1_REPO@$IPOPT_L1_BRANCH --no-prompt --skip "$SKIP_PKGS"
-mv ./Ipopt ./Ipopt_l1
-rm -rf ThirdParty/ASL # Remove ASL and let Ipopt have what it wants
-if [ ${osname} = "el7" ]; then 
-  # Seems now the git autostash option is used, but not in the older git in el7. To prevent failure to get Mumps, just delete Thirdparty
-  # Looks like the only things in therd party are thing that Ipopt gets, so this should be ok.
-  rm -rf ./Thirdparty/*
-fi
 bash coinbrew fetch $IPOPT_REPO@$IPOPT_BRANCH --no-prompt --skip 'ThirdParty/Lapack ThirdParty/Blas ThirdParty/Glpk'
 cp -r Ipopt Ipopt_share
 
@@ -213,7 +202,7 @@ cd ThirdParty/Mumps
 # We compile without metis to get around a suspected Metis/Mumps version
 # incompatibility. See https://github.com/IDAES/idaes-ext/issues/268
 # ThirdParty/Metis uses v4.0.3, while ThirdParty/Mumps uses the latest release.
-METISFLAG="--without-metis"
+METISFLAG="--with-metis"
 ./configure --disable-shared --enable-static $METISFLAG \
  --prefix=$IDAES_EXT/coinbrew/dist FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
 make $PARALLEL
@@ -226,22 +215,6 @@ echo "#########################################################################"
 cd Ipopt
 ./configure --disable-shared --enable-static --with-mumps $hslflag \
   --prefix=$IDAES_EXT/coinbrew/dist
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
-
-echo "#########################################################################"
-echo "# Ipopt_L1 ampl executables                                             #"
-echo "#########################################################################"
-cd Ipopt_l1
-if [ ${osname} = "el7" ]; then
-  ./configure --disable-shared --enable-static --with-mumps $hslflag \
-    ADD_CXXFLAGS="-std=c++11" \
-    --prefix=$IDAES_EXT/coinbrew/dist_l1
-else
-  ./configure --disable-shared --enable-static --with-mumps $hslflag \
-    --prefix=$IDAES_EXT/coinbrew/dist_l1
-fi
 make $PARALLEL
 make install
 cd $IDAES_EXT/coinbrew
@@ -384,22 +357,15 @@ mkdir dist dist/bin dist/include dist/lib
 # cd dist
 # Executables
 if [ ${osname} = "windows" ]; then
-  # windows
-  cp ./coinbrew/dist_l1/bin/ipopt.exe ./dist/bin/ipopt_l1.exe
-  cp ./coinbrew/dist_l1/bin/ipopt_sens.exe ./dist/bin/ipopt_sens_l1.exe
   # Explicitly only get ipopt so we don't get anything we shouldn't
   cp ./coinbrew/dist-share/bin/libipopt*.dll ./dist/lib/
   cp ./coinbrew/dist-share/bin/libsipopt*.dll ./dist/lib/
 elif [ ${osname} = "darwin" ]; then
-  cp ./coinbrew/dist_l1/bin/ipopt ./dist/bin/ipopt_l1
-  cp ./coinbrew/dist_l1/bin/ipopt_sens ./dist/bin/ipopt_sens_l1
   # Explicitly only get ipopt so we don't get anything we shouldn't
   cp ./coinbrew/dist-share/lib/libipopt*.dylib ./dist/lib/
   cp ./coinbrew/dist-share/lib/libsipopt*.dylib ./dist/lib/
 else
   # linux
-  cp ./coinbrew/dist_l1/bin/ipopt ./dist/bin/ipopt_l1
-  cp ./coinbrew/dist_l1/bin/ipopt_sens ./dist/bin/ipopt_sens_l1
   # Explicitly only get ipopt so we don't get anything we shouldn't
   cp ./coinbrew/dist-share/lib/libipopt*.so ./dist/lib/
   cp ./coinbrew/dist-share/lib/libsipopt*.so ./dist/lib/
@@ -566,9 +532,7 @@ if [ ${osname} = "darwin" ]; then
   update_rpath_darwin dist/bin/clp
   update_rpath_darwin dist/bin/cbc
   update_rpath_darwin dist/bin/bonmin
-  update_rpath_darwin dist/bin/couenne  
-  update_rpath_darwin dist/bin/ipopt_l1
-  update_rpath_darwin dist/bin/ipopt_sens_l1
+  update_rpath_darwin dist/bin/couenne
   update_rpath_darwin dist/lib/libipopt.dylib
   update_rpath_darwin dist/lib/libsipopt.dylib
   update_rpath_darwin dist/lib/libipopt.3.dylib
