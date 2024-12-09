@@ -110,6 +110,7 @@ fi
 SKIP_PKGS='ThirdParty/Lapack ThirdParty/Blas ThirdParty/Glpk ThirdParty/Metis ThirdParty/Mumps'
 bash coinbrew fetch Clp --no-prompt --skip "$SKIP_PKGS"
 bash coinbrew fetch Cbc --no-prompt --skip "$SKIP_PKGS"
+SKIP_PKGS='ThirdParty/Lapack ThirdParty/Blas ThirdParty/Glpk ThirdParty/Mumps'
 SKIP_PKGS="$SKIP_PKGS Cbc Clp Cgl Osi"
 bash coinbrew fetch Bonmin --no-prompt --skip "$SKIP_PKGS"
 bash coinbrew fetch Couenne --no-prompt --skip "$SKIP_PKGS"
