@@ -14,10 +14,12 @@ RUN apt-get -y update; \
 RUN mkdir repo
 
 # Install PETSc
+# 3.20.6 is the newest version that works with the PETSc extras
+# included in this repo
 RUN cd repo; \
-    wget https://gitlab.com/petsc/petsc/-/archive/v3.22.1/petsc-v3.22.1.tar.gz; \
-    tar -zxvf petsc-v3.22.1.tar.gz; \
-    mv petsc-v3.22.1 petsc; \
+    wget https://gitlab.com/petsc/petsc/-/archive/v3.20.6/petsc-v3.20.6.tar.gz; \
+    tar -zxvf petsc-v3.20.6.tar.gz; \
+    mv petsc-v3.20.6 petsc; \
     mkdir petsc-dist; \
     cd petsc; \
     ./configure configure --with-debug=0 --with-shared=0 --with-mpi=0 --with-fortran-bindings=0 --download-metis --download-mumps --with-mumps-serial=1 --prefix=/repo/petsc-dist; \
