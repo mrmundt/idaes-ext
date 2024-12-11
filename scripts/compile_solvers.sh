@@ -174,16 +174,6 @@ make install
 cd $IDAES_EXT/coinbrew
 
 echo "#########################################################################"
-echo "# Thirdparty/Metis                                                      #"
-echo "#########################################################################"
-cd ThirdParty/Metis
-./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-  --prefix=$IDAES_EXT/coinbrew/dist FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
-
-echo "#########################################################################"
 echo "# Thirdparty/HSL                                                        #"
 echo "#########################################################################"
 if [ $build_hsl = "YES" ]; then
