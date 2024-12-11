@@ -151,16 +151,16 @@ fi
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:${IDAES_EXT}/coinbrew/dist/lib/pkgconfig
 
 echo "#########################################################################"
-echo "# Get coinhsl.zip if available                                          #"
+echo "# Get coinhsl.tar.gz if available                                       #"
 echo "#########################################################################"
 # If we have the HSL stuff copy and extract it in the right place
-if [ -f $IDAES_EXT/../coinhsl.zip ]; then
-  echo "Found coinhsl.zip"
-  # if the HSL source zip is in place...
-  mkdir ThirdParty/HSL/coinhsl
-  cp $IDAES_EXT/../coinhsl.zip ThirdParty/HSL/coinhsl/
-  cd ThirdParty/HSL/coinhsl
-  unzip coinhsl.zip
+if [ -f $IDAES_EXT/../coinhsl.tar.gz ]; then
+  echo "Found coinhsl.tar.gz"
+  # if the HSL source tarball is in place...
+  mkdir -p ThirdParty/HSL/
+  cp $IDAES_EXT/../coinhsl.tar.gz ThirdParty/HSL/
+  cd ThirdParty/HSL/
+  tar -xvf coinhsl.tar.gz
   cd $IDAES_EXT/coinbrew
 fi
 
