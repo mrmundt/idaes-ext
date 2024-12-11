@@ -31,14 +31,14 @@ if [ "$arg2" = "--without-hsl" ]; then
   hslflag="--without-hsl"
   with_hsl="NO"
   build_hsl="NO"
-elif [ -f $IDAES_EXT/../coinhsl.zip ]; then
-  echo "coinhsl.zip found. Building solvers with HSL." >&2
+elif [ -f $IDAES_EXT/../coinhsl.tar.gz ]; then
+  echo "coinhsl.tar.gz found. Building solvers with HSL." >&2
   echo "HSL: YES"
   hslflag="--with-hsl"
   with_hsl="YES"
   build_hsl="YES"
 else
-  echo "coinhsl.zip not found. Attempting to build with installed HSL." >&2
+  echo "coinhsl.tar.gz not found. Attempting to build with installed HSL." >&2
   echo "To skip HSL-reliant build steps, send the --without-hsl argument to this script" >&2
   echo "HSL: YES"
   hslflag="--with-hsl"
