@@ -95,7 +95,7 @@ if [ ${osname} = "darwin" ]; then
   export CC="gcc-13"
   export CXX="g++-13"
 else
-  wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+  wget --secure-protocol tlsv1 https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
 fi
 
 # Work-around for mumps gcc v10 gfortran bug
