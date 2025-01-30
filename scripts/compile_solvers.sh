@@ -160,7 +160,7 @@ if [ -f $IDAES_EXT/../coinhsl.tar.gz ]; then
   mkdir -p ThirdParty/HSL/
   cp $IDAES_EXT/../coinhsl.tar.gz ThirdParty/HSL/
   cd ThirdParty/HSL/
-  tar --no-same-permissions -xvf coinhsl.tar.gz
+  tar --ignore-zeros -xvf coinhsl.tar.gz
   cd $IDAES_EXT/coinbrew
 fi
 
