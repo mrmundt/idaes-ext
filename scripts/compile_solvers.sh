@@ -555,6 +555,17 @@ echo "#########################################################################"
 echo "# Finish                                                                #"
 echo "#########################################################################"
 cd dist
+if [ "$osname" == "el9" ]; then
+  # There is a bug on el9 machines regarding the blas/lapack links.
+  # Fix the symlinks: https://bugs.rockylinux.org/view.php?id=7855
+  pushd bin
+  for exe in *; do
+      patchelf --replace-needed libblas.so.3 libblas.so.3.idaes $exe
+      patchelf --replace-needed liblapack.so.3 liblapack.so.3.idaes $exe
+      patchelf --set-rpath '$ORIGIN/../lib' $exe
+  done
+  popd
+fi
 tar -czvf idaes-solvers-${osname}-${MNAME}.tar.gz *
 cd $IDAES_EXT
 echo "Done"
