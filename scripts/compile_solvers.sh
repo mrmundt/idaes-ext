@@ -160,7 +160,7 @@ if [ -f $IDAES_EXT/../coinhsl.tar.gz ]; then
   mkdir -p ThirdParty/HSL/
   cp $IDAES_EXT/../coinhsl.tar.gz ThirdParty/HSL/
   cd ThirdParty/HSL/
-  tar --ignore-zeros -xvf coinhsl.tar.gz
+  tar -xvf coinhsl.tar.gz
   cd $IDAES_EXT/coinbrew
 fi
 
@@ -169,6 +169,16 @@ echo "# Thirdparty/ASL                                                        #"
 echo "#########################################################################"
 cd ThirdParty/ASL
 ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
+make $PARALLEL
+make install
+cd $IDAES_EXT/coinbrew
+
+echo "#########################################################################"
+echo "# Thirdparty/Metis                                                      #"
+echo "#########################################################################"
+cd ThirdParty/Metis
+./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+  --prefix=$IDAES_EXT/coinbrew/dist FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
 make $PARALLEL
 make install
 cd $IDAES_EXT/coinbrew
