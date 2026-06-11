@@ -598,7 +598,11 @@ then
 
   echo "ASL err patch complete."
 fi
-make $PARALLEL
+if [ ${osname} = "windows" ]; then
+  make $PARALLEL STATIC_RUNTIME="-static -static-libgcc -static-libstdc++"
+else
+  make $PARALLEL
+fi
 make py
 if [ ${osname} = "windows" ]
 then
