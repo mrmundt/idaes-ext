@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # These scripts are not meant to be used for general builds.  They
-# are tailored only to specific build systems.  They may provide some
+# are taylor only to specific build systems.  They may provide some
 # hints on how to build the solvers, but are limited.
 
 # Set to exit on error
@@ -93,12 +93,15 @@ if [ "$osname" = "windows" ]; then
   STATIC_EXE_LTFLAGS="-all-static"
   # cmake/raw-gcc executables (k_aug): gcc's own -static.
   STATIC_CMAKE_EXE_LDFLAGS="-static -static-libgcc -static-libstdc++"
+  # Libraries that must be appended at the end of a static link line
+  STATIC_CMAKE_END_LIBS="-lquadmath"
   # Shared objects (libpynumero_ASL, etc.): fold in GCC runtime only.
   STATIC_LIB_LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -lgfortran -lquadmath -Wl,-Bdynamic"
 else
   STATIC_EXE_LDFLAGS=""
   STATIC_EXE_LTFLAGS=""
   STATIC_CMAKE_EXE_LDFLAGS=""
+  STATIC_CMAKE_END_LIBS=""
   STATIC_LIB_LDFLAGS=""
 fi
 # ----------------------------------------------------------------------------
@@ -588,8 +591,12 @@ if [ $with_hsl = "YES" ]; then
   then
     # k_aug and dot_sens are executables run as subprocesses.
     # cmake links via raw gcc (no libtool), so use gcc's own -static.
+    # CMAKE_C_STANDARD_LIBRARIES appends -lquadmath at the end of the link so
+    # the static libgfortran.a can resolve quadmath_snprintf
     cmake -DWITH_MINGW=ON -DCMAKE_C_COMPILER=$CC \
-      -DCMAKE_EXE_LINKER_FLAGS="$STATIC_CMAKE_EXE_LDFLAGS" -G"MSYS Makefiles" .
+      -DCMAKE_EXE_LINKER_FLAGS="$STATIC_CMAKE_EXE_LDFLAGS" \
+      -DCMAKE_C_STANDARD_LIBRARIES="$STATIC_CMAKE_END_LIBS" \
+      -G"MSYS Makefiles" .
   else
     cmake -DCMAKE_C_COMPILER=$CC .
   fi
