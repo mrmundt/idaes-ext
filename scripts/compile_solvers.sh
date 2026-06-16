@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # These scripts are not meant to be used for general builds.  They
-# are taylor only to specific build systems.  They may provide some
+# are tailored only to specific build systems.  They may provide some
 # hints on how to build the solvers, but are limited.
 
 # Set to exit on error
@@ -80,21 +80,25 @@ export PETSC_ARCH=""
 # older libwinpthread-1.dll is resolved first at runtime, the binary fails to
 # launch with an "entry point not found" error (and, for the solver exes,
 # shows up downstream as an empty version string / IndexError in Pyomo's ASL
-# driver)
+# driver). Incorporating the GCC/MinGW runtime into each artifact removes that
+# external dependency entirely.
 #
-# Executables are linked through libtool, whose "fully static including system
-# libs" spelling is -all-static (plain gcc -static is reinterpreted by
-# libtool). Shared objects (.dll / .pyd) cannot be made fully static, so for
-# those we only fold the GCC runtime in and leave the object itself shared.
-#
-# These are empty on non-Windows platforms, so the configure/cmake lines below
+# All are empty on non-Windows platforms, so the configure/cmake lines below
 # are unchanged there (static glibc + dynamic BLAS/LAPACK would break Linux,
 # and -static is unsupported on macOS).
 if [ "$osname" = "windows" ]; then
-  STATIC_EXE_LDFLAGS="-all-static -static-libgcc -static-libstdc++"
+  # COIN solvers: gcc-valid runtime flags in LDFLAGS ...
+  STATIC_EXE_LDFLAGS="-static-libgcc -static-libstdc++"
+  # ... and the libtool-only fully-static flag in LT_LDFLAGS.
+  STATIC_EXE_LTFLAGS="-all-static"
+  # cmake/raw-gcc executables (k_aug): gcc's own -static.
+  STATIC_CMAKE_EXE_LDFLAGS="-static -static-libgcc -static-libstdc++"
+  # Shared objects (libpynumero_ASL, etc.): fold in GCC runtime only.
   STATIC_LIB_LDFLAGS="-static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -lgfortran -lquadmath -Wl,-Bdynamic"
 else
   STATIC_EXE_LDFLAGS=""
+  STATIC_EXE_LTFLAGS=""
+  STATIC_CMAKE_EXE_LDFLAGS=""
   STATIC_LIB_LDFLAGS=""
 fi
 # ----------------------------------------------------------------------------
@@ -293,7 +297,8 @@ echo "# Ipopt ampl executables                                                #"
 echo "#########################################################################"
 cd Ipopt
 ./configure --disable-shared --enable-static --with-mumps $hslflag \
-  --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS"
+  --prefix=$IDAES_EXT/coinbrew/dist \
+  LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 make $PARALLEL
 make install
 cd $IDAES_EXT/coinbrew
@@ -335,10 +340,10 @@ cd Clp
 if [ "$MNAME" = "aarch64" ]; then
   # MNAME of darwin is arm64, so this is linux only
   ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-   --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS"
+   --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 else
   ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-   LDFLAGS="$STATIC_EXE_LDFLAGS"
+   LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 fi
 make $PARALLEL
 make install
@@ -366,10 +371,10 @@ cd Cbc
 if [ "$MNAME" = "aarch64" ]; then
   # MNAME of darwin is arm64, so this is linux only
   ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS"
+    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 else
   ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    LDFLAGS="$STATIC_EXE_LDFLAGS"
+    LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 fi
 make $PARALLEL
 make install
@@ -389,10 +394,10 @@ mv atmpfile Bonmin/src/Interfaces/BonBranchingTQP.cpp
 if [ "$MNAME" = "aarch64" ]; then
   # MNAME of darwin is arm64, so this is linux only
   ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS"
+    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 else
   ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS"
+    LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 fi
 make $PARALLEL
 make install
@@ -405,10 +410,10 @@ cd Couenne
 if [ "$MNAME" = "aarch64" ]; then
   # MNAME of darwin is arm64, so this is linux only
   ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS"
+    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 else
   ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS"
+    LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
 fi
 make $PARALLEL
 make install
@@ -581,9 +586,10 @@ if [ $with_hsl = "YES" ]; then
   git checkout $K_AUG_BRANCH
   if [ ${osname} = "windows" ]
   then
-    # k_aug and dot_sens are executables run as subprocesses; bake the runtime in.
+    # k_aug and dot_sens are executables run as subprocesses.
+    # cmake links via raw gcc (no libtool), so use gcc's own -static.
     cmake -DWITH_MINGW=ON -DCMAKE_C_COMPILER=$CC \
-      -DCMAKE_EXE_LINKER_FLAGS="$STATIC_EXE_LDFLAGS" -G"MSYS Makefiles" .
+      -DCMAKE_EXE_LINKER_FLAGS="$STATIC_CMAKE_EXE_LDFLAGS" -G"MSYS Makefiles" .
   else
     cmake -DCMAKE_C_COMPILER=$CC .
   fi
