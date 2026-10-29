@@ -40,10 +40,10 @@ jobs:
           TARGET: "darwin-x86_64"
           SHORTOS: osx
         - os: macos-15
-          TARGET: "darwin-15-arm64"
+          TARGET: "darwin-arm64"
           SHORTOS: osx
         - os: macos-26
-          TARGET: "darwin-26-arm64"
+          TARGET: "darwin-arm64"
           SHORTOS: osx
         - os: windows-2022
           TARGET: "windows-x86_64"
