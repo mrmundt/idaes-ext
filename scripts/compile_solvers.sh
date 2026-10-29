@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # These scripts are not meant to be used for general builds.  They
-# are taylor only to specific build systems.  They may provide some
+# are tailored only to specific build systems.  They may provide some
 # hints on how to build the solvers, but are limited.
 
 # Set to exit on error
@@ -48,7 +48,7 @@ fi
 
 # Set a few basic things
 export IPOPT_BRANCH="stable/3.14"
-export IPOPT_REPO="https://github.com/mrmundt/Ipopt"
+export IPOPT_REPO="https://github.com/IDAES/Ipopt"
 export PYNU_BRANCH="main"
 export PYNU_REPO="https://github.com/pyomo/pyomo"
 export K_AUG_BRANCH="default"
