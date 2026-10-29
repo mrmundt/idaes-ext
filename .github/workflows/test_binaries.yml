@@ -231,7 +231,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86_64, aarch64]
-        container: ["rockylinux:8", "rockylinux:9", "debian:11", "debian:12", "debian:13", "ubuntu:20.04"]
+        container: ["rockylinux:8", "rockylinux:9", "debian:12", "debian:13", "ubuntu:20.04"]
         include:
           - container: "ubuntu:20.04"
             TARGET: "ubuntu2004"
@@ -242,9 +242,6 @@ jobs:
           - container: "rockylinux:9"
             TARGET: "el9"
             SHORTOS: el
-          - container: "debian:11"
-            TARGET: "ubuntu2004"
-            SHORTOS: deb
           - container: "debian:12"
             TARGET: "ubuntu2204"
             SHORTOS: deb
