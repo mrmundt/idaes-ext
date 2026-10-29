@@ -39,6 +39,9 @@ jobs:
         - os: macos-15-intel
           TARGET: "darwin-x86_64"
           SHORTOS: osx
+        - os: macos-26-intel
+          TARGET: "darwin-x86_64"
+          SHORTOS: osx
         - os: macos-15
           TARGET: "darwin-arm64"
           SHORTOS: osx
