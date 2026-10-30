@@ -171,12 +171,14 @@ bash coinbrew fetch Cbc --no-prompt --skip "$SKIP_PKGS"
 SKIP_PKGS="$SKIP_PKGS Cbc Clp Cgl Osi"
 bash coinbrew fetch Bonmin --no-prompt --skip "$SKIP_PKGS"
 bash coinbrew fetch Couenne --no-prompt --skip "$SKIP_PKGS"
-# Patch Couenne to fix: error: static assertion failed: comparison object must be invocable as const
+# Couenne <= 0.5.8 needs const comparators; fixed upstream in 0.5.9
 cd Couenne
-cp $IDAES_EXT/scripts/CouenneMatrix.hpp.patch ./
-cp $IDAES_EXT/scripts/CouenneProblem.hpp.patch ./
-patch Couenne/src/problem/CouenneProblem.hpp < CouenneProblem.hpp.patch
-patch Couenne/src/cut/sdpcuts/CouenneMatrix.hpp < CouenneMatrix.hpp.patch
+if ! grep -q 'const Node &b) const' Couenne/src/problem/CouenneProblem.hpp; then
+  patch Couenne/src/problem/CouenneProblem.hpp < $IDAES_EXT/scripts/CouenneProblem.hpp.patch
+fi
+if ! grep -q 'const &b) const' Couenne/src/cut/sdpcuts/CouenneMatrix.hpp; then
+  patch Couenne/src/cut/sdpcuts/CouenneMatrix.hpp < $IDAES_EXT/scripts/CouenneMatrix.hpp.patch
+fi
 cd ..
 # We don't want to coin-or Ipopt
 rm -rf Ipopt

@@ -37,4 +37,4 @@ We currently run tests against:
 - macOS: Intel (x86_64), Apple Silicon (arm64)
 - Windows: 2022, 2025
 - Rocky Linux: 8, 9
-- Debian: 11, 12, 13
+- Debian: 12, 13
