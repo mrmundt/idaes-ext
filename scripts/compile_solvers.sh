@@ -3,9 +3,24 @@
 # These scripts are not meant to be used for general builds.  They
 # are tailored only to specific build systems.  They may provide some
 # hints on how to build the solvers, but are limited.
+#
+# Usage: compile_solvers.sh PLATFORM [--without-hsl] [--restart]
+#
+# RESUMING: if a run dies part-way (network drop, Ctrl-C, compile error),
+# just re-run the SAME command. Every expensive step leaves a marker in
+# ./.build_stamps when it finishes, and finished steps are skipped on the
+# next run. Pass --restart (or delete ./coinbrew) to start from scratch.
 
 # Set to exit on error
 set -e
+
+usage() {
+  echo "Usage: $0 PLATFORM [--without-hsl] [--restart]"
+  echo "  PLATFORM       one of {windows, darwin, el8, el9,"
+  echo "                 ubuntu2004, ubuntu2204, ubuntu2404}"
+  echo "  --without-hsl  build solvers without HSL"
+  echo "  --restart      discard any previous partial build and start over"
+}
 
 # First argument is OS name provided by user when running this
 osname=$1;
@@ -15,6 +30,22 @@ then
   echo "  ubuntu2004, ubuntu2204, ubuntu2404}."
   exit 1
 fi
+shift
+
+# Remaining arguments are optional flags, in any order
+without_hsl_arg="NO"
+restart="NO"
+for arg in "$@"; do
+  case "$arg" in
+    --without-hsl) without_hsl_arg="YES" ;;
+    --restart)     restart="YES" ;;
+    *)
+      echo "Unknown argument: $arg" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
 
 # Get the machine type
 export MNAME=`uname -m`
@@ -24,8 +55,7 @@ export MNAME=`uname -m`
 # to be the root of the idaes-ext repository.
 export IDAES_EXT=`pwd`
 
-arg2=$2
-if [ "$arg2" = "--without-hsl" ]; then
+if [ "$without_hsl_arg" = "YES" ]; then
   echo "--without-hsl flag received. Building solvers without HSL." >&2
   echo "HSL: NO"
   hslflag="--without-hsl"
@@ -147,13 +177,95 @@ if [ "$osname" = "darwin" ]; then
   fi
 fi
 
-mkdir coinbrew
+echo "#########################################################################"
+echo "# Resume support                                                        #"
+echo "#########################################################################"
+# Each expensive step drops a marker file in $STAMP_DIR when it succeeds.
+# On a re-run, steps with a marker are skipped, so an interrupted build picks
+# up where it left off. Packaging into ./dist is cheap and is always redone
+# from scratch, so the final tarball never contains stale files.
+STAMP_DIR="$IDAES_EXT/.build_stamps"
+build_config="osname=$osname machine=$MNAME hslflag=$hslflag build_hsl=$build_hsl"
+
+if [ "$restart" = "YES" ]; then
+  echo "--restart given: removing coinbrew/, dist/ and saved build progress."
+  rm -rf "$STAMP_DIR" "$IDAES_EXT/coinbrew" "$IDAES_EXT/dist"
+fi
+
+if [ ! -d "$IDAES_EXT/coinbrew" ]; then
+  # Nothing to resume from; make sure no stale markers survive.
+  rm -rf "$STAMP_DIR"
+  echo "Starting a fresh build."
+elif [ -f "$STAMP_DIR/config" ]; then
+  prev_config=$(cat "$STAMP_DIR/config")
+  if [ "$prev_config" != "$build_config" ]; then
+    echo "The existing build in $IDAES_EXT/coinbrew used different settings:" >&2
+    echo "  previous run: $prev_config" >&2
+    echo "  this run:     $build_config" >&2
+    echo "Re-run with the same arguments as before to resume it, or add" >&2
+    echo "--restart to discard it and start over with the new settings." >&2
+    exit 1
+  fi
+  echo "Resuming previous build; completed steps will be skipped."
+else
+  echo "Found $IDAES_EXT/coinbrew with no saved progress (probably from an"
+  echo "older version of this script). Reusing it and re-running every step;"
+  echo "if anything misbehaves, re-run with --restart."
+fi
+mkdir -p "$STAMP_DIR"
+echo "$build_config" > "$STAMP_DIR/config"
+
+# run_stage NAME COMMAND [ARGS...]
+# Runs COMMAND unless step NAME already finished on an earlier run, then
+# records it as finished. COMMAND runs in a subshell, so a step that fails
+# half-way can't leave the rest of the script in the wrong directory.
+run_stage() {
+  stage_name=$1
+  shift
+  if [ -f "$STAMP_DIR/$stage_name.done" ]; then
+    echo ">>> Step '$stage_name' already completed on a previous run; skipping."
+    return 0
+  fi
+  ( set -e; "$@" )
+  touch "$STAMP_DIR/$stage_name.done"
+}
+
+# get_repo URL DIR
+# Clone URL into DIR, or clean DIR if it is already a working clone. A clone
+# that was cut off part-way (e.g. by a network drop) is deleted and redone.
+get_repo() {
+  _url=$1
+  _dir=$2
+  # GIT_CEILING_DIRECTORIES stops git from walking up into the idaes-ext
+  # repo itself when $_dir is not a usable repository.
+  if [ -d "$_dir" ] && ! { [ -e "$_dir/.git" ] && \
+       GIT_CEILING_DIRECTORIES="$IDAES_EXT" \
+       git -C "$_dir" rev-parse --verify -q HEAD >/dev/null 2>&1; }; then
+    echo "$_dir looks like an incomplete clone; removing it and cloning again."
+    rm -rf "$_dir"
+  fi
+  if [ ! -d "$_dir" ]; then
+    git clone "$_url" "$_dir"
+    echo "Repository cloned from $_url."
+  else
+    git -C "$_dir" clean -fd
+    echo "Untracked files removed from $_dir."
+  fi
+}
+
+mkdir -p coinbrew
 cd coinbrew
 
-if [ ${osname} = "darwin" ]; then
-  curl --output coinbrew https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
-else
-  wget --secure-protocol tlsv1 https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+# Download to a temporary name first so an interrupted download never leaves
+# a truncated coinbrew script behind.
+if [ ! -s coinbrew ]; then
+  rm -f coinbrew.part
+  if [ ${osname} = "darwin" ]; then
+    curl --fail --output coinbrew.part https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+  else
+    wget --secure-protocol tlsv1 -O coinbrew.part https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+  fi
+  mv coinbrew.part coinbrew
 fi
 
 # Work-around for mumps gcc v10 gfortran bug
@@ -166,12 +278,13 @@ fi
 
 # Fetch coin-or stuff and dependencies
 SKIP_PKGS='ThirdParty/Lapack ThirdParty/Blas ThirdParty/Glpk ThirdParty/Mumps'
-bash coinbrew fetch Clp --no-prompt --skip "$SKIP_PKGS"
-bash coinbrew fetch Cbc --no-prompt --skip "$SKIP_PKGS"
+run_stage fetch_clp bash coinbrew fetch Clp --no-prompt --skip "$SKIP_PKGS"
+run_stage fetch_cbc bash coinbrew fetch Cbc --no-prompt --skip "$SKIP_PKGS"
 SKIP_PKGS="$SKIP_PKGS Cbc Clp Cgl Osi"
-bash coinbrew fetch Bonmin --no-prompt --skip "$SKIP_PKGS"
-bash coinbrew fetch Couenne --no-prompt --skip "$SKIP_PKGS"
+run_stage fetch_bonmin bash coinbrew fetch Bonmin --no-prompt --skip "$SKIP_PKGS"
+run_stage fetch_couenne bash coinbrew fetch Couenne --no-prompt --skip "$SKIP_PKGS"
 # Couenne <= 0.5.8 needs const comparators; fixed upstream in 0.5.9
+# (Safe to repeat: each patch is applied only if it isn't already there.)
 cd Couenne
 if ! grep -q 'const Node &b) const' Couenne/src/problem/CouenneProblem.hpp; then
   patch Couenne/src/problem/CouenneProblem.hpp < $IDAES_EXT/scripts/CouenneProblem.hpp.patch
@@ -180,11 +293,15 @@ if ! grep -q 'const &b) const' Couenne/src/cut/sdpcuts/CouenneMatrix.hpp; then
   patch Couenne/src/cut/sdpcuts/CouenneMatrix.hpp < $IDAES_EXT/scripts/CouenneMatrix.hpp.patch
 fi
 cd ..
-# We don't want to coin-or Ipopt
-rm -rf Ipopt
-# We DO want the custom IDAES Ipopt
-bash coinbrew fetch $IPOPT_REPO@$IPOPT_BRANCH --no-prompt --skip 'ThirdParty/Lapack ThirdParty/Blas ThirdParty/Glpk'
-cp -r Ipopt Ipopt_share
+
+stage_fetch_ipopt() {
+  # We don't want to coin-or Ipopt (or a half-made copy from an earlier run)
+  rm -rf Ipopt Ipopt_share
+  # We DO want the custom IDAES Ipopt
+  bash coinbrew fetch $IPOPT_REPO@$IPOPT_BRANCH --no-prompt --skip 'ThirdParty/Lapack ThirdParty/Blas ThirdParty/Glpk'
+  cp -r Ipopt Ipopt_share
+}
+run_stage fetch_ipopt stage_fetch_ipopt
 
 # Make sure I don't include any dependencies I don't want
 rm -rf ThirdParty/Blas
@@ -198,14 +315,16 @@ echo "#########################################################################"
 echo "# Use novariadic metis 4.0.3 if available                               #"
 echo "#########################################################################"
 if [ -f $IDAES_EXT/../metis-4.0-novariadic.tar.gz ]; then
-  echo "Found metis-4.0-novariadic.tar.gz"
-  rm -rf ./ThirdParty/Metis/metis-4.0/*
-  cp $IDAES_EXT/../metis-4.0-novariadic.tar.gz ./ThirdParty/Metis/metis-4.0/
-  cd ThirdParty/Metis/metis-4.0
-  tar -zxvf metis-4.0-novariadic.tar.gz
-  rm metis-4.0-novariadic.tar.gz
-  make $PARALLEL
-  cd $IDAES_EXT/coinbrew
+  stage_metis_novariadic() {
+    echo "Found metis-4.0-novariadic.tar.gz"
+    rm -rf ./ThirdParty/Metis/metis-4.0/*
+    cp $IDAES_EXT/../metis-4.0-novariadic.tar.gz ./ThirdParty/Metis/metis-4.0/
+    cd ThirdParty/Metis/metis-4.0
+    tar -zxvf metis-4.0-novariadic.tar.gz
+    rm metis-4.0-novariadic.tar.gz
+    make $PARALLEL
+  }
+  run_stage metis_novariadic stage_metis_novariadic
 fi
 
 ######
@@ -218,223 +337,252 @@ echo "# Get coinhsl.tar.gz if available                                       #"
 echo "#########################################################################"
 # If we have the HSL stuff copy and extract it in the right place
 if [ -f $IDAES_EXT/../coinhsl.tar.gz ]; then
-  echo "Found coinhsl.tar.gz"
-  # if the HSL source tarball is in place...
-  mkdir -p ThirdParty/HSL/
-  cp $IDAES_EXT/../coinhsl.tar.gz ThirdParty/HSL/
-  cd ThirdParty/HSL/
-  tar -xvf coinhsl.tar.gz
-  cd $IDAES_EXT/coinbrew
+  stage_extract_hsl() {
+    echo "Found coinhsl.tar.gz"
+    # if the HSL source tarball is in place...
+    mkdir -p ThirdParty/HSL/
+    cp $IDAES_EXT/../coinhsl.tar.gz ThirdParty/HSL/
+    cd ThirdParty/HSL/
+    tar -xvf coinhsl.tar.gz
+  }
+  run_stage extract_hsl stage_extract_hsl
 fi
 
 echo "#########################################################################"
 echo "# Thirdparty/ASL                                                        #"
 echo "#########################################################################"
-cd ThirdParty/ASL
-./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_asl() {
+  cd ThirdParty/ASL
+  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
+  make $PARALLEL
+  make install
+}
+run_stage build_asl stage_asl
 
 echo "#########################################################################"
 echo "# Thirdparty/Metis                                                      #"
 echo "#########################################################################"
-cd ThirdParty/Metis
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    --build=aarch64-unknown-linux-gnu FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    FFLAGS="-fPIC" CFLAGS="-fPIC -Wno-error=implicit-function-declaration" CXXFLAGS="-fPIC"
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_metis() {
+  cd ThirdParty/Metis
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+      --build=aarch64-unknown-linux-gnu FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+      FFLAGS="-fPIC" CFLAGS="-fPIC -Wno-error=implicit-function-declaration" CXXFLAGS="-fPIC"
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_metis stage_metis
 
 echo "#########################################################################"
 echo "# Thirdparty/HSL                                                        #"
 echo "#########################################################################"
 if [ "$build_hsl" = "YES" ]; then
-  cd ThirdParty/HSL
+  stage_hsl() {
+    cd ThirdParty/HSL
 
-  if [ "$MNAME" != "arm64" ]; then
-    METIS_CFLAGS="-I$IDAES_EXT/coinbrew/dist/include/coin/ThirdParty"
-    METIS_LFLAGS="-L$IDAES_EXT/coinbrew/dist/lib -lcoinmetis -lm"
+    if [ "$MNAME" != "arm64" ]; then
+      METIS_CFLAGS="-I$IDAES_EXT/coinbrew/dist/include/coin/ThirdParty"
+      METIS_LFLAGS="-L$IDAES_EXT/coinbrew/dist/lib -lcoinmetis -lm"
 
-    ./configure \
-      --disable-shared --enable-static --with-metis \
-      --with-metis-cflags="$METIS_CFLAGS" \
-      --with-metis-lflags="$METIS_LFLAGS" \
-      --prefix=$IDAES_EXT/coinbrew/dist \
-      FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
-  else
-    # Metis + arm64 do not play well together. We'd rather
-    # have something HSL functional than nothing at all,
-    # so at least for now, we skip metis.
-    ./configure \
-      --disable-shared --enable-static --without-metis \
-      --prefix=$IDAES_EXT/coinbrew/dist \
-      FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
-  fi
+      ./configure \
+        --disable-shared --enable-static --with-metis \
+        --with-metis-cflags="$METIS_CFLAGS" \
+        --with-metis-lflags="$METIS_LFLAGS" \
+        --prefix=$IDAES_EXT/coinbrew/dist \
+        FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
+    else
+      # Metis + arm64 do not play well together. We'd rather
+      # have something HSL functional than nothing at all,
+      # so at least for now, we skip metis.
+      ./configure \
+        --disable-shared --enable-static --without-metis \
+        --prefix=$IDAES_EXT/coinbrew/dist \
+        FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
+    fi
 
-  make $PARALLEL
-  make install
-  cd $IDAES_EXT/coinbrew
+    make $PARALLEL
+    make install
+  }
+  run_stage build_hsl stage_hsl
 fi
 
 echo "#########################################################################"
 echo "# Thirdparty/Mumps                                                      #"
 echo "#########################################################################"
-cd ThirdParty/Mumps
-# We compile without metis to get around a suspected Metis/Mumps version
-# incompatibility. See https://github.com/IDAES/idaes-ext/issues/268
-# ThirdParty/Metis uses v4.0.3, while ThirdParty/Mumps uses the latest release.
-METISFLAG="--without-metis"
-./configure --disable-shared --enable-static $METISFLAG \
- --prefix=$IDAES_EXT/coinbrew/dist FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_mumps() {
+  cd ThirdParty/Mumps
+  # We compile without metis to get around a suspected Metis/Mumps version
+  # incompatibility. See https://github.com/IDAES/idaes-ext/issues/268
+  # ThirdParty/Metis uses v4.0.3, while ThirdParty/Mumps uses the latest release.
+  METISFLAG="--without-metis"
+  ./configure --disable-shared --enable-static $METISFLAG \
+   --prefix=$IDAES_EXT/coinbrew/dist FFLAGS="-fPIC" CFLAGS="-fPIC" CXXFLAGS="-fPIC"
+  make $PARALLEL
+  make install
+}
+run_stage build_mumps stage_mumps
 
 echo "#########################################################################"
 echo "# Ipopt ampl executables                                                #"
 echo "#########################################################################"
-cd Ipopt
-./configure --disable-shared --enable-static --with-mumps $hslflag \
-  --prefix=$IDAES_EXT/coinbrew/dist \
-  LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_ipopt() {
+  cd Ipopt
+  ./configure --disable-shared --enable-static --with-mumps $hslflag \
+    --prefix=$IDAES_EXT/coinbrew/dist \
+    LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  make $PARALLEL
+  make install
+}
+run_stage build_ipopt stage_ipopt
 
 echo "#########################################################################"
 echo "# CoinUtils                                                             #"
 echo "#########################################################################"
-cd CoinUtils
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_coinutils() {
+  cd CoinUtils
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+      --prefix=$IDAES_EXT/coinbrew/dist
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_coinutils stage_coinutils
 
 echo "#########################################################################"
 echo "# Osi                                                                   #"
 echo "#########################################################################"
-cd Osi
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_osi() {
+  cd Osi
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+      --prefix=$IDAES_EXT/coinbrew/dist
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_osi stage_osi
 
 echo "#########################################################################"
 echo "# Clp                                                                   #"
 echo "#########################################################################"
-cd Clp
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-   --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-   LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_clp() {
+  cd Clp
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+     --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+     LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_clp stage_clp
 
 echo "#########################################################################"
 echo "# Cgl                                                                   #"
 echo "#########################################################################"
-cd Cgl
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_cgl() {
+  cd Cgl
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+      --prefix=$IDAES_EXT/coinbrew/dist
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_cgl stage_cgl
 
 echo "#########################################################################"
 echo "# Cbc                                                                   #"
 echo "#########################################################################"
-cd Cbc
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_cbc() {
+  cd Cbc
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+      --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+      LDFLAGS="$STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_cbc stage_cbc
 
 echo "#########################################################################"
 echo "# Bonmin                                                                #"
 echo "#########################################################################"
-cd Bonmin
-# Two replacements below are a temporary fix until I can nail the problem down better
-# There is a problem linking the exception class TMINLP_INVALID so replaced
-# it with a similar one from IPOPT that works
-sed s/"TMINLP_INVALID"/"INVALID_TNLP"/g Bonmin/src/Interfaces/BonTMINLP2TNLP.cpp > atmpfile
-mv atmpfile Bonmin/src/Interfaces/BonTMINLP2TNLP.cpp
-sed s/"TMINLP_INVALID"/"INVALID_TNLP"/g Bonmin/src/Interfaces/BonBranchingTQP.cpp > atmpfile
-mv atmpfile Bonmin/src/Interfaces/BonBranchingTQP.cpp
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_bonmin() {
+  cd Bonmin
+  # Two replacements below are a temporary fix until I can nail the problem down better
+  # There is a problem linking the exception class TMINLP_INVALID so replaced
+  # it with a similar one from IPOPT that works
+  # (Safe to repeat: a second pass finds nothing left to replace.)
+  sed s/"TMINLP_INVALID"/"INVALID_TNLP"/g Bonmin/src/Interfaces/BonTMINLP2TNLP.cpp > atmpfile
+  mv atmpfile Bonmin/src/Interfaces/BonTMINLP2TNLP.cpp
+  sed s/"TMINLP_INVALID"/"INVALID_TNLP"/g Bonmin/src/Interfaces/BonBranchingTQP.cpp > atmpfile
+  mv atmpfile Bonmin/src/Interfaces/BonBranchingTQP.cpp
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+      --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+      LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_bonmin stage_bonmin
 
 echo "#########################################################################"
 echo "# Couenne                                                               #"
 echo "#########################################################################"
-cd Couenne
-if [ "$MNAME" = "aarch64" ]; then
-  # MNAME of darwin is arm64, so this is linux only
-  ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
-    --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-else
-  ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
-    LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
-fi
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_couenne() {
+  cd Couenne
+  if [ "$MNAME" = "aarch64" ]; then
+    # MNAME of darwin is arm64, so this is linux only
+    ./configure --build=aarch64-unknown-linux-gnu --disable-shared --enable-static \
+      --prefix=$IDAES_EXT/coinbrew/dist LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  else
+    ./configure --disable-shared --enable-static --prefix=$IDAES_EXT/coinbrew/dist \
+      LDFLAGS="-fopenmp $STATIC_EXE_LDFLAGS" LT_LDFLAGS="$STATIC_EXE_LTFLAGS"
+  fi
+  make $PARALLEL
+  make install
+}
+run_stage build_couenne stage_couenne
 
 echo "#########################################################################"
 echo "# Ipopt Shared Libraries                                                #"
 echo "#########################################################################"
 # NOTE: This build deliberately produces shared libipopt*.dll, so it must NOT
 # be linked with -all-static. Left unchanged.
-cd Ipopt_share
-./configure --enable-shared --disable-static --without-asl --disable-java \
-  --with-mumps $hslflag --enable-relocatable --prefix=$IDAES_EXT/coinbrew/dist-share
-make $PARALLEL
-make install
-cd $IDAES_EXT/coinbrew
+stage_ipopt_share() {
+  cd Ipopt_share
+  ./configure --enable-shared --disable-static --without-asl --disable-java \
+    --with-mumps $hslflag --enable-relocatable --prefix=$IDAES_EXT/coinbrew/dist-share
+  make $PARALLEL
+  make install
+}
+run_stage build_ipopt_share stage_ipopt_share
 
 # The above compiles and installs solvers into ./coinbrew/dist*
 # Now we will copy the files we wish to distribute into a ./dist directory,
@@ -444,6 +592,9 @@ echo "#########################################################################"
 echo "# Copy Coin Solver Files to dist                                        #"
 echo "#########################################################################"
 cd $IDAES_EXT
+# dist/ is always rebuilt from scratch (it's quick), so a re-run never
+# packages leftovers from an earlier attempt.
+rm -rf dist
 mkdir dist dist/bin dist/include dist/lib
 # I'll try to avoid cd-ing around, for now, to make this script more
 # explicit for the reader.
@@ -542,33 +693,27 @@ if [ ${osname} = "darwin" ]; then
   export CXX="c++"
 fi
 
-# Check if the directory exists
-if [ ! -d "pyomo" ]; then
-    # If it doesn't exist, clone the repository
-    git clone "$PYNU_REPO"
-    echo "Repository cloned from $PYNU_REPO."
-    cd pyomo
-else
-    # If it exists, navigate to the directory and run git clean
-    cd pyomo
-    git clean -fd
-    echo "Untracked files removed from pyomo."
-fi
-git checkout $PYNU_BRANCH
-cd pyomo/contrib/pynumero/src
-mkdir build
-cd build
-if [ ${osname} = "windows" ]
-then
-  # libpynumero_ASL is a shared object loaded into the Python process, so it
-  # gets the shared-object runtime flags (can't be fully static).
-  cmake -DENABLE_HSL=no -DIPOPT_DIR=$IDAES_EXT/coinbrew/dist \
-    -DCMAKE_SHARED_LINKER_FLAGS="$STATIC_LIB_LDFLAGS" -G"MSYS Makefiles" ..
-else
-  cmake .. -DENABLE_HSL=no -DIPOPT_DIR=$IDAES_EXT/coinbrew/dist
-fi
-make $PARALLEL
-cp libpynumero_ASL* $IDAES_EXT/dist/lib/
+stage_pynumero() {
+  cd $IDAES_EXT
+  get_repo "$PYNU_REPO" pyomo
+  cd pyomo
+  git checkout $PYNU_BRANCH
+  cd pyomo/contrib/pynumero/src
+  mkdir -p build
+  cd build
+  if [ ${osname} = "windows" ]
+  then
+    # libpynumero_ASL is a shared object loaded into the Python process, so it
+    # gets the shared-object runtime flags (can't be fully static).
+    cmake -DENABLE_HSL=no -DIPOPT_DIR=$IDAES_EXT/coinbrew/dist \
+      -DCMAKE_SHARED_LINKER_FLAGS="$STATIC_LIB_LDFLAGS" -G"MSYS Makefiles" ..
+  else
+    cmake .. -DENABLE_HSL=no -DIPOPT_DIR=$IDAES_EXT/coinbrew/dist
+  fi
+  make $PARALLEL
+}
+run_stage build_pynumero stage_pynumero
+cp $IDAES_EXT/pyomo/pyomo/contrib/pynumero/src/build/libpynumero_ASL* $IDAES_EXT/dist/lib/
 # Return to root directory
 cd $IDAES_EXT
 
@@ -576,35 +721,30 @@ echo "#########################################################################"
 echo "# k_aug, dot_sens                                                       #"
 echo "#########################################################################"
 if [ $with_hsl = "YES" ]; then
-  # Check if the directory exists
-  if [ ! -d "k_aug" ]; then
-      # If it doesn't exist, clone the repository
-      git clone "$K_AUG_REPO"
-  else
-      # If it exists, navigate to the directory and run git clean
-      pushd k_aug
-      git clean -fd
-      popd
-  fi
-  cp ./scripts/k_aug_CMakeLists.txt ./k_aug/CMakeLists.txt
-  cd k_aug
-  git checkout $K_AUG_BRANCH
-  if [ ${osname} = "windows" ]
-  then
-    # k_aug and dot_sens are executables run as subprocesses.
-    # cmake links via raw gcc (no libtool), so use gcc's own -static.
-    # CMAKE_C_STANDARD_LIBRARIES appends -lquadmath at the end of the link so
-    # the static libgfortran.a can resolve quadmath_snprintf
-    cmake -DWITH_MINGW=ON -DCMAKE_C_COMPILER=$CC \
-      -DCMAKE_EXE_LINKER_FLAGS="$STATIC_CMAKE_EXE_LDFLAGS" \
-      -DCMAKE_C_STANDARD_LIBRARIES="$STATIC_CMAKE_END_LIBS" \
-      -G"MSYS Makefiles" .
-  else
-    cmake -DCMAKE_C_COMPILER=$CC .
-  fi
-  make $PARALLEL
-  cp bin/k_aug* $IDAES_EXT/dist/bin/
-  cp dot_sens* $IDAES_EXT/dist/bin/
+  stage_k_aug() {
+    cd $IDAES_EXT
+    get_repo "$K_AUG_REPO" k_aug
+    cp ./scripts/k_aug_CMakeLists.txt ./k_aug/CMakeLists.txt
+    cd k_aug
+    git checkout $K_AUG_BRANCH
+    if [ ${osname} = "windows" ]
+    then
+      # k_aug and dot_sens are executables run as subprocesses.
+      # cmake links via raw gcc (no libtool), so use gcc's own -static.
+      # CMAKE_C_STANDARD_LIBRARIES appends -lquadmath at the end of the link so
+      # the static libgfortran.a can resolve quadmath_snprintf
+      cmake -DWITH_MINGW=ON -DCMAKE_C_COMPILER=$CC \
+        -DCMAKE_EXE_LINKER_FLAGS="$STATIC_CMAKE_EXE_LDFLAGS" \
+        -DCMAKE_C_STANDARD_LIBRARIES="$STATIC_CMAKE_END_LIBS" \
+        -G"MSYS Makefiles" .
+    else
+      cmake -DCMAKE_C_COMPILER=$CC .
+    fi
+    make $PARALLEL
+  }
+  run_stage build_k_aug stage_k_aug
+  cp $IDAES_EXT/k_aug/bin/k_aug* $IDAES_EXT/dist/bin/
+  cp $IDAES_EXT/k_aug/dot_sens* $IDAES_EXT/dist/bin/
   # Return to root directory
   cd $IDAES_EXT
 else
@@ -616,50 +756,55 @@ echo "# PETSc                                                                 #"
 echo "#########################################################################"
 export ASL_INC=$IDAES_EXT/coinbrew/dist/include/coin-or/asl
 export ASL_LIB=$IDAES_EXT/coinbrew/dist/lib/libcoinasl.a
+stage_petsc() {
+  cd $IDAES_EXT/petsc
+  if [ ${osname} = "windows" ]
+  then
+    # (Safe to repeat: already-patched lines no longer match these patterns.)
+    FILES=("fg_dae.c" "fg_nl.c" "petsc.c" "printing.c")
+
+    for f in "${FILES[@]}"; do
+      if [ ! -f "$f" ]; then
+        echo "Warning: $f not found, skipping"
+        continue
+      fi
+
+      echo "Patching $f..."
+      # Replace simple declarations: int err;  int err = 0;
+      sed -i 's/\bint[[:space:]]\+err\b/fint err/g' "$f"
+      sed -i 's/\bint[[:space:]]\+err\s*=/fint err=/g' "$f"
+
+      # Fix comma declarations like:
+      #      int i=0, err=0;
+      #
+      # The strategy:
+      #   - detect lines with "int ... , err"
+      #   - rewrite them into:
+      #       int i=0;
+      #       fint err=0;
+      if grep -qE '\bint\b.*,' "$f" && grep -qE ',[[:space:]]*err' "$f"; then
+        sed -i \
+          -e 's/\bint\(.*\),[[:space:]]*err[[:space:]]*=\([^;]*\);/int\1;\nfint err=\2;/g' \
+          -e 's/\bint\(.*\),[[:space:]]*err;/int\1;\nfint err;/g' \
+          "$f"
+        echo "  - Split comma declarations containing err"
+      fi
+    done
+
+    echo "ASL err patch complete."
+  fi
+  # PETSc links through its own makefile (raw gcc CLINKER, not libtool), so it
+  # uses the plain -static spelling via STATIC_RUNTIME. This was verified to
+  # produce a self-contained petsc.exe (no libwinpthread/libgfortran imports).
+  if [ ${osname} = "windows" ]; then
+    make $PARALLEL STATIC_RUNTIME="-static -static-libgcc -static-libstdc++"
+  else
+    make $PARALLEL
+  fi
+  make py
+}
+run_stage build_petsc stage_petsc
 cd $IDAES_EXT/petsc
-if [ ${osname} = "windows" ]
-then
-  FILES=("fg_dae.c" "fg_nl.c" "petsc.c" "printing.c")
-
-  for f in "${FILES[@]}"; do
-    if [ ! -f "$f" ]; then
-      echo "Warning: $f not found, skipping"
-      continue
-    fi
-
-    echo "Patching $f..."
-    # Replace simple declarations: int err;  int err = 0;
-    sed -i 's/\bint[[:space:]]\+err\b/fint err/g' "$f"
-    sed -i 's/\bint[[:space:]]\+err\s*=/fint err=/g' "$f"
-
-    # Fix comma declarations like:
-    #      int i=0, err=0;
-    #
-    # The strategy:
-    #   - detect lines with "int ... , err"
-    #   - rewrite them into:
-    #       int i=0;
-    #       fint err=0;
-    if grep -qE '\bint\b.*,' "$f" && grep -qE ',[[:space:]]*err' "$f"; then
-      sed -i \
-        -e 's/\bint\(.*\),[[:space:]]*err[[:space:]]*=\([^;]*\);/int\1;\nfint err=\2;/g' \
-        -e 's/\bint\(.*\),[[:space:]]*err;/int\1;\nfint err;/g' \
-        "$f"
-      echo "  - Split comma declarations containing err"
-    fi
-  done
-
-  echo "ASL err patch complete."
-fi
-# PETSc links through its own makefile (raw gcc CLINKER, not libtool), so it
-# uses the plain -static spelling via STATIC_RUNTIME. This was verified to
-# produce a self-contained petsc.exe (no libwinpthread/libgfortran imports).
-if [ ${osname} = "windows" ]; then
-  make $PARALLEL STATIC_RUNTIME="-static -static-libgcc -static-libstdc++"
-else
-  make $PARALLEL
-fi
-make py
 if [ ${osname} = "windows" ]
 then
   cp petsc.exe $IDAES_EXT/dist/bin/
@@ -703,7 +848,7 @@ if [ ${osname} = "darwin" ]; then
   update_library_rpath_darwin dist/lib/libsipopt.3.dylib
   update_library_rpath_darwin dist/lib/libpynumero_ASL.dylib
   # if no hsl k_aug and dot_sens won't exist
-  update_rpath_darwin dist/bin/k_aug || true 
+  update_rpath_darwin dist/bin/k_aug || true
   update_rpath_darwin dist/bin/dot_sens || true
   update_rpath_darwin dist/bin/petsc
 fi
@@ -733,3 +878,6 @@ tar -czvf idaes-solvers-${osname}-${MNAME}.tar.gz *
 cd $IDAES_EXT
 echo "Done"
 echo "HSL Present: ${with_hsl}"
+echo "(Build progress is saved in $STAMP_DIR; a re-run will only repackage."
+echo " Use --restart to rebuild everything from scratch.)"
+
